@@ -1,10 +1,12 @@
 package org.mitre.synthea.export;
 
-import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +17,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -27,6 +30,7 @@ import org.mitre.synthea.input.FixedRecord;
 import org.mitre.synthea.input.FixedRecordGroup;
 import org.mitre.synthea.modules.DeathModule;
 import org.mitre.synthea.world.agents.Person;
+import org.mitre.synthea.world.concepts.Claim;
 import org.mitre.synthea.world.concepts.HealthRecord;
 import org.mitre.synthea.world.concepts.HealthRecord.Encounter;
 import org.mitre.synthea.world.concepts.HealthRecord.Observation;
@@ -45,6 +49,11 @@ public abstract class Exporter {
   
   private static final List<Pair<Person, Long>> deferredExports = 
           Collections.synchronizedList(new LinkedList<>());
+
+  private static final ConcurrentHashMap<Path, PrintWriter> fileWriters = 
+          new ConcurrentHashMap<Path, PrintWriter>();
+
+  private static final int fileBufferSize = 4 * 1024 * 1024;
 
   /**
    * Runtime configuration of the record exporter.
@@ -332,20 +341,39 @@ public abstract class Exporter {
    * @param file Path to the new file.
    * @param contents The contents of the file.
    */
-  private static synchronized void appendToFile(Path file, String contents) {
-    try {
-      if (Files.notExists(file)) {
-        Files.createFile(file);
+  private static void appendToFile(Path file, String contents) {
+    PrintWriter writer = fileWriters.get(file);
+
+    if (writer == null) {
+      synchronized (fileWriters) {
+        writer = fileWriters.get(file);
+        if (writer == null) {
+          try {
+            writer = new PrintWriter(
+              new BufferedWriter(new FileWriter(file.toFile(), true),fileBufferSize)
+            );
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          fileWriters.put(file, writer);
+        }
       }
-    } catch (Exception e) {
-      // Ignore... multi-threaded race condition to create a file that didn't exist,
-      // but does now because one of the other exporter threads beat us to it.
     }
-    try {
-      Files.write(file, Collections.singleton(contents), StandardOpenOption.APPEND);
-    } catch (IOException e) {
-      e.printStackTrace();
+    
+    synchronized (writer) {
+      writer.println(contents);
     }
+  }
+
+  /**
+   * Flushes the data and closes all open files.
+   */
+  private static void closeOpenFiles() {
+    Iterator<PrintWriter> itr = fileWriters.values().iterator();
+    while (itr.hasNext()) {
+      itr.next().close();
+    }
+    fileWriters.clear();
   }
 
   /**
@@ -422,28 +450,6 @@ public abstract class Exporter {
     }
     Config.set("exporter.fhir.bulk_data", bulk);
 
-    if (Config.getAsBoolean("exporter.cost_access_outcomes_report")) {
-      ReportExporter.export(generator);
-    }
-
-    if (Config.getAsBoolean("exporter.prevalence_report")) {
-      try {
-        PrevalenceReport.export(generator);
-      } catch (Exception e) {
-        System.err.println("Prevalence report generation failed!");
-        e.printStackTrace();
-      }
-    }
-
-    if (Config.getAsBoolean("exporter.custom_report")) {
-      try {
-        CustomSqlReport.export(generator);
-      } catch (Exception e) {
-        System.err.println("Custom report generation failed!");
-        e.printStackTrace();
-      }
-    }
-
     if (Config.getAsBoolean("exporter.cdw.export")) {
       CDWExporter.getInstance().writeFactTables();
     }
@@ -456,6 +462,8 @@ public abstract class Exporter {
         e.printStackTrace();
       }
     }
+
+    closeOpenFiles();
   }
 
   /**
@@ -504,7 +512,7 @@ public abstract class Exporter {
     Predicate<HealthRecord.Entry> notFutureDated = e -> e.start <= endTime;
 
     for (Encounter encounter : record.encounters) {
-      List<HealthRecord.Entry> claimItems = encounter.claim.items;
+      List<Claim.ClaimEntry> claimItems = encounter.claim.items;
       // keep conditions if still active, regardless of start date
       Predicate<HealthRecord.Entry> conditionActive = c -> record.conditionActive(c.type);
       // or if the condition was active at any point since the cutoff date
@@ -513,7 +521,14 @@ public abstract class Exporter {
       filterEntries(encounter.conditions, claimItems, cutoffDate, endTime, keepCondition);
 
       // allergies are essentially the same as conditions
-      filterEntries(encounter.allergies, claimItems, cutoffDate, endTime, keepCondition);
+      // But we need to redefine all of the predicates, because we are talking about Allergies as
+      // opposed to Entries... You would think that it would work... but generics are hard
+      Predicate<HealthRecord.Allergy> allergyActive = c -> record.allergyActive(c.type);
+      // or if the condition was active at any point since the cutoff date
+      Predicate<HealthRecord.Allergy> allergyActiveWithinCutoff =
+          c -> c.stop != 0L && c.stop > cutoffDate;
+      Predicate<HealthRecord.Allergy> keepAllergy = allergyActive.or(allergyActiveWithinCutoff);
+      filterEntries(encounter.allergies, claimItems, cutoffDate, endTime, keepAllergy);
 
       // some of the "future death" logic could potentially add a future-dated death certificate
       Predicate<Observation> isCauseOfDeath =
@@ -571,7 +586,7 @@ public abstract class Exporter {
    *                     be kept
    */
   private static <E extends HealthRecord.Entry> void filterEntries(List<E> entries,
-      List<HealthRecord.Entry> claimItems, long cutoffDate,
+      List<Claim.ClaimEntry> claimItems, long cutoffDate,
       long endTime, Predicate<E> keepFunction) {
 
     Iterator<E> iterator = entries.iterator();
@@ -585,7 +600,7 @@ public abstract class Exporter {
           && (keepFunction == null || !keepFunction.test(entry))) {
         iterator.remove();
 
-        claimItems.removeIf(ci -> ci == entry);
+        claimItems.removeIf(ci -> ci.entry == entry);
         // compare with == because we only care if it's the actual same object
       }
     }

@@ -80,13 +80,15 @@ public class StateTest {
     person.setProvider(EncounterType.EMERGENCY, mock);
     person.setProvider(EncounterType.INPATIENT, mock);
 
+    int age = 35;
     time = System.currentTimeMillis();
-    long birthTime = time - Utilities.convertTime("years", 35);
+    long birthTime = time - Utilities.convertTime("years", age);
     person.attributes.put(Person.BIRTHDATE, birthTime);
 
     Payer.loadNoInsurance();
-    for (int i = 0; i < person.payerHistory.length; i++) {
-      person.setPayerAtAge(i, Payer.noInsurance);
+    for (int i = 0; i < age; i++) {
+      long yearTime = time - Utilities.convertTime("years", i);
+      person.coverage.setPayerAtTime(yearTime, Payer.noInsurance);
     }
     
     // Ensure Physiology state is enabled by default
@@ -268,6 +270,19 @@ public class StateTest {
   }
 
   @Test
+  public void gmfTwoDelayExactTime() throws Exception {
+    Module module = TestHelper.getFixture("gmf_two_point_oh.json");
+
+    // Seconds
+    State delay = module.getState("2_Second_Delay");
+    delay.entered = time;
+    assertFalse(delay.process(person, time));
+    assertFalse(delay.process(person, time + 1L * 1000));
+    assertTrue(delay.process(person, time + 2L * 1000));
+    assertTrue(delay.process(person, time + 3L * 1000));
+  }
+
+  @Test
   public void delay_passes_after_exact_time() throws Exception {
     Module module = TestHelper.getFixture("delay.json");
 
@@ -331,6 +346,38 @@ public class StateTest {
   }
 
   @Test
+  public void gausian_delay_never_negative() throws Exception {
+    Module module = TestHelper.getFixture("gaussian_distro_delay.json");
+
+    // Seconds
+    State delay = module.getState("1 Mean Delay");
+    for (int i = 0; i < 100; i++) {
+      State.Delay daClone = (State.Delay) delay.clone();
+      daClone.entered = time;
+      daClone.process(person, time);
+      assertTrue(daClone.next >= time);
+    }
+  }
+
+  @Test
+  public void gausian_delay_has_correct_mean() throws Exception {
+    Module module = TestHelper.getFixture("gaussian_distro_delay.json");
+
+    long acc = 0;
+    // Seconds
+    State delay = module.getState("10 Mean Delay");
+    for (int i = 0; i < 1000; i++) {
+      State.Delay daClone = (State.Delay) delay.clone();
+      daClone.entered = time;
+      daClone.process(person, time);
+      acc += (daClone.next - time);
+    }
+    long mean = acc / 1000;
+    assertTrue(mean > 9500);
+    assertTrue(mean < 10500);
+  }
+
+  @Test
   public void delay_passes_after_time_range() throws Exception {
     Module module = TestHelper.getFixture("delay.json");
 
@@ -339,56 +386,56 @@ public class StateTest {
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000));
-    assertFalse(delay.process(person, time + 2L * 1000));
-    assertTrue(delay.process(person, time + 10L * 1000));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000));
 
     // Minutes
     delay = module.getState("2_To_10_Minute_Delay");
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000 * 60));
-    assertFalse(delay.process(person, time + 2L * 1000 * 60));
-    assertTrue(delay.process(person, time + 10L * 1000 * 60));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000 * 60));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000 * 60));
 
     // Hours
     delay = module.getState("2_To_10_Hour_Delay");
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000 * 60 * 60));
-    assertFalse(delay.process(person, time + 2L * 1000 * 60 * 60));
-    assertTrue(delay.process(person, time + 10L * 1000 * 60 * 60));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000 * 60 * 60));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000 * 60 * 60));
 
     // Days
     delay = module.getState("2_To_10_Day_Delay");
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000 * 60 * 60 * 24));
-    assertFalse(delay.process(person, time + 2L * 1000 * 60 * 60 * 24));
-    assertTrue(delay.process(person, time + 10L * 1000 * 60 * 60 * 24));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000 * 60 * 60 * 24));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000 * 60 * 60 * 24));
 
     // Weeks
     delay = module.getState("2_To_10_Week_Delay");
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000 * 60 * 60 * 24 * 7));
-    assertFalse(delay.process(person, time + 2L * 1000 * 60 * 60 * 24 * 7));
-    assertTrue(delay.process(person, time + 10L * 1000 * 60 * 60 * 24 * 7));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000 * 60 * 60 * 24 * 7));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000 * 60 * 60 * 24 * 7));
 
     // Months
     delay = module.getState("2_To_10_Month_Delay");
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000 * 60 * 60 * 24 * 30));
-    assertFalse(delay.process(person, time + 2L * 1000 * 60 * 60 * 24 * 30));
-    assertTrue(delay.process(person, time + 10L * 1000 * 60 * 60 * 24 * 30));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000 * 60 * 60 * 24 * 30));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000 * 60 * 60 * 24 * 30));
 
     // Years
     delay = module.getState("2_To_10_Year_Delay");
     delay.entered = time;
     assertFalse(delay.process(person, time));
     assertFalse(delay.process(person, time + 1L * 1000 * 60 * 60 * 24 * 365));
-    assertFalse(delay.process(person, time + 2L * 1000 * 60 * 60 * 24 * 365));
-    assertTrue(delay.process(person, time + 10L * 1000 * 60 * 60 * 24 * 365));
+    assertFalse(delay.process(person, time - 1 + 2L * 1000 * 60 * 60 * 24 * 365));
+    assertTrue(delay.process(person, time + 1 + 10L * 1000 * 60 * 60 * 24 * 365));
   }
 
   @Test
@@ -450,6 +497,24 @@ public class StateTest {
   }
 
   @Test
+  public void gmfTwoVitalSign() throws Exception {
+    // Setup a mock to track calls to the patient record
+    // In this case, the record shouldn't be called at all
+    person.record = Mockito.mock(HealthRecord.class);
+
+    Module module = TestHelper.getFixture("gmf_two_point_oh.json");
+
+    State vitalSign = module.getState("VitalSign").clone();
+    assertTrue(vitalSign.process(person, time));
+
+    assertTrue(person.getVitalSign(VitalSign.SYSTOLIC_BLOOD_PRESSURE, time) >= 110);
+    assertTrue(person.getVitalSign(VitalSign.SYSTOLIC_BLOOD_PRESSURE, time) <= 130);
+
+    verifyZeroInteractions(person.record);
+  }
+
+
+  @Test
   public void vitalsign() throws Exception {
     // Setup a mock to track calls to the patient record
     // In this case, the record shouldn't be called at all
@@ -474,6 +539,16 @@ public class StateTest {
     Long updatedTime = person.getSymptomLastUpdatedTime(module.name, "Chest Pain");
     assertTrue(updatedTime != null);
     assertEquals(time, updatedTime.longValue());
+  }
+
+  @Test
+  public void gmfTwoSymptom() throws Exception {
+    Module module = TestHelper.getFixture("gmf_two_point_oh.json");
+
+    State symptom1 = module.getState("SymptomOnset");
+    assertTrue(symptom1.process(person, time));
+    int symptomValue = person.getSymptom("Chest Pain");
+    assertTrue(1 <= symptomValue && symptomValue <= 10);
   }
 
   @Test
@@ -507,6 +582,17 @@ public class StateTest {
     assertTrue(set1.process(person, time));
 
     assertEquals("Vicodin", person.attributes.get("Current Opioid Prescription"));
+  }
+
+  @Test
+  public void gmfTwoSetAttributeWithValue() throws Exception {
+    Module module = TestHelper.getFixture("gmf_two_point_oh.json");
+
+    person.attributes.remove("Favorite Number");
+    State set1 = module.getState("Set_Attribute_1");
+    assertTrue(set1.process(person, time));
+
+    assertEquals(2.0, person.attributes.get("Favorite Number"));
   }
 
   @Test
@@ -578,6 +664,25 @@ public class StateTest {
   }
 
   @Test
+  public void gmfTwoProcedure() throws Exception {
+    person.attributes.remove("Most Recent Surgery");
+    Module module = TestHelper.getFixture("gmf_two_point_oh.json");
+
+    State appendectomy = module.getState("Appendectomy");
+    appendectomy.process(person, time);
+
+    HealthRecord.Procedure procedure = (HealthRecord.Procedure) person.attributes
+        .get("Most Recent Surgery");
+
+    assertEquals(time, procedure.start);
+
+    Code code = procedure.codes.get(0);
+
+    assertEquals("6025007", code.code);
+    assertEquals("Laparoscopic appendectomy", code.display);
+  }
+
+  @Test
   public void procedure_assigns_entity_attribute() throws Exception {
     person.attributes.remove("Most Recent Surgery");
     Module module = TestHelper.getFixture("procedure.json");
@@ -627,6 +732,19 @@ public class StateTest {
     assertEquals("Laparoscopic appendectomy", code.display);
     assertEquals(time, proc.start);
     assertEquals(time + Utilities.convertTime("minutes", 45), proc.stop);
+  }
+
+  @Test
+  public void gmfTwoObservation() throws Exception {
+    Module module = TestHelper.getFixture("gmf_two_point_oh.json");
+    State os = module.getState("Observation");
+    assertTrue(os.process(person, time));
+
+    HealthRecord.Observation observation = person.record.encounters.get(0).observations.get(0);
+    assertEquals("mg/dL", observation.unit);
+    double obsValue = (double) observation.value;
+    assertTrue(obsValue > 0);
+    assertTrue(obsValue < 400);
   }
 
   @Test
@@ -831,7 +949,6 @@ public class StateTest {
     Code code = enc.codes.get(0);
     assertEquals("50849002", code.code);
     assertEquals("Emergency Room Admission", code.display);
-
   }
 
   @Test
@@ -869,13 +986,26 @@ public class StateTest {
     State encounter = module.getState("Dr_Visit");
     assertTrue(encounter.process(person, time));
 
-    HealthRecord.Entry allergy = person.record.encounters.get(0).allergies.get(0);
+    HealthRecord.Allergy allergy = person.record.encounters.get(0).allergies.get(0);
     assertEquals(time, allergy.start);
     assertEquals(0L, allergy.stop);
 
     Code code = allergy.codes.get(0);
     assertEquals("91930004", code.code);
     assertEquals("Allergy to eggs", code.display);
+
+    assertTrue(allergy.reactions.size() >= 1 && allergy.reactions.size() < 3);
+    allergy.reactions.forEach((reaction, severity) -> {
+      String reactionCode = reaction.code;
+      assertTrue(reactionCode.equals("21626009") || reactionCode.equals("91941002"));
+      if (reactionCode.equals("21626009")) {
+        assertTrue(severity == HealthRecord.ReactionSeverity.MILD
+            || severity == HealthRecord.ReactionSeverity.MODERATE);
+      }
+      if (reactionCode.equals("91941002")) {
+        assertTrue(severity == HealthRecord.ReactionSeverity.SEVERE);
+      }
+    });
   }
 
   @Test
@@ -1744,58 +1874,121 @@ public class StateTest {
 
       assertEquals("Example_Condition", person.history.get(16).name);
       assertEquals("Recursive Calls Submodules Module", person.history.get(16).module.name);
-
+      long previousStateExited = person.history.get(17).exited;
+      long currentStateEntered = person.history.get(16).entered;
+      assertEquals(previousStateExited, currentStateEntered);
+      
       assertEquals("Call_Encounter_Submodule", person.history.get(15).name);
       assertEquals("Recursive Calls Submodules Module", person.history.get(15).module.name);
-
+      previousStateExited = person.history.get(16).exited;
+      currentStateEntered = person.history.get(15).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Initial", person.history.get(14).name);
       assertEquals("Encounter Submodule Module", person.history.get(14).module.name);
+      // the state being called by the submodule won't necessarily have this property
+      // because submodule.exited gets rewritten to whenever the terminal of the submodule exits
+      // ex. main.CallSubmodule: entered 1/1/2020, exited 12/31/2020
+      //     sub.Initial: entered 1/1/2020 exited 1/1/2020
+      //     sub.Delay: entered 1/1/2020 exited 12/31/2020
+      //     sub.Terminal: entered 12/31/2020 exited 12/31/2020
+      // previousStateExited = person.history.get(15).exited;
+      // currentStateEntered = person.history.get(14).entered;
+      // assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Delay", person.history.get(13).name);
       assertEquals("Encounter Submodule Module", person.history.get(13).module.name);
+      previousStateExited = person.history.get(14).exited;
+      currentStateEntered = person.history.get(13).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Encounter_In_Submodule", person.history.get(12).name);
       assertEquals("Encounter Submodule Module", person.history.get(12).module.name);
+      previousStateExited = person.history.get(13).exited;
+      currentStateEntered = person.history.get(12).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Call_MedicationOrder_Submodule", person.history.get(11).name);
       assertEquals("Encounter Submodule Module", person.history.get(11).module.name);
+      previousStateExited = person.history.get(12).exited;
+      currentStateEntered = person.history.get(11).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
 
       assertEquals("Initial", person.history.get(10).name);
       assertEquals("Medication Submodule Module", person.history.get(10).module.name);
+      // previousStateExited = person.history.get(11).exited;
+      // currentStateEntered = person.history.get(10).entered;
+      // assertEquals(previousStateExited, currentStateEntered);
+      // see notes above for why this property doesn't hold
 
       assertEquals("Examplitis_Medication", person.history.get(9).name);
       assertEquals("Medication Submodule Module", person.history.get(9).module.name);
+      previousStateExited = person.history.get(10).exited;
+      currentStateEntered = person.history.get(9).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Delay_Yet_Again", person.history.get(8).name);
       assertEquals("Medication Submodule Module", person.history.get(8).module.name);
+      previousStateExited = person.history.get(9).exited;
+      currentStateEntered = person.history.get(8).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("End_Medication", person.history.get(7).name);
       assertEquals("Medication Submodule Module", person.history.get(7).module.name);
+      previousStateExited = person.history.get(8).exited;
+      currentStateEntered = person.history.get(7).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Med_Terminal", person.history.get(6).name);
       assertEquals("Medication Submodule Module", person.history.get(6).module.name);
+      previousStateExited = person.history.get(7).exited;
+      currentStateEntered = person.history.get(6).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
 
       assertEquals("Call_MedicationOrder_Submodule", person.history.get(5).name);
       assertEquals("Encounter Submodule Module", person.history.get(5).module.name);
+      // previousStateExited = person.history.get(6).exited;
+      // currentStateEntered = person.history.get(5).entered;
+      // assertEquals(previousStateExited, currentStateEntered);
+      // note that this is the same state object at position 11 and 5
+      // even though it was only called once it shows up twice
+      // (before and after all of the submodule states)
+      // but the entered & exited times don't line up cleanly
 
       assertEquals("Delay_Some_More", person.history.get(4).name);
       assertEquals("Encounter Submodule Module", person.history.get(4).module.name);
+      previousStateExited = person.history.get(5).exited;
+      currentStateEntered = person.history.get(4).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Encounter_Terminal", person.history.get(3).name);
       assertEquals("Encounter Submodule Module", person.history.get(3).module.name);
+      previousStateExited = person.history.get(4).exited;
+      currentStateEntered = person.history.get(3).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
 
       assertEquals("Call_Encounter_Submodule", person.history.get(2).name);
       assertEquals("Recursive Calls Submodules Module", person.history.get(2).module.name);
+      // previousStateExited = person.history.get(3).exited;
+      // currentStateEntered = person.history.get(2).entered;
+      // assertEquals(previousStateExited, currentStateEntered);
+      // see note above, this is the same as position 15 
 
       assertEquals("End_Condition", person.history.get(1).name);
       assertEquals("Recursive Calls Submodules Module", person.history.get(1).module.name);
+      previousStateExited = person.history.get(2).exited;
+      currentStateEntered = person.history.get(1).entered;
+      assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Terminal", person.history.get(0).name);
       assertEquals("Recursive Calls Submodules Module", person.history.get(0).module.name);
+      previousStateExited = person.history.get(1).exited;
+      currentStateEntered = person.history.get(0).entered;
+      assertEquals(previousStateExited, currentStateEntered);
+
     } finally {
       // always clean these up, to ensure they don't get seen by any other tests
       modules.remove("submodules/encounter_submodule");

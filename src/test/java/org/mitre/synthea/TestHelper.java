@@ -13,6 +13,8 @@ import java.time.ZoneOffset;
 import org.mitre.synthea.engine.Module;
 import org.mitre.synthea.helpers.Config;
 import org.mitre.synthea.helpers.Utilities;
+import org.mitre.synthea.world.agents.Payer;
+import org.mitre.synthea.world.agents.Person;
 
 public abstract class TestHelper {
 
@@ -33,7 +35,7 @@ public abstract class TestHelper {
   public static Module getFixture(String filename) throws Exception {
     Path modulesFolder = Paths.get("generic");
     Path module = modulesFolder.resolve(filename);
-    return Module.loadFile(module, modulesFolder, null);
+    return Module.loadFile(module, false, null, false);
   }
 
   /**
@@ -88,7 +90,6 @@ public abstract class TestHelper {
    * Ensures that unit tests do not pollute the output folders.
    */
   public static void exportOff() {
-    Config.set("generate.database_type", "none"); // ensure we don't write to a file-based DB
     Config.set("exporter.use_uuid_filenames", "false");
     Config.set("exporter.fhir.use_shr_extensions", "false");
     Config.set("exporter.subfolders_by_id_substring", "false");

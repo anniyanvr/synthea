@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math.ode.DerivativeException;
 import org.mitre.synthea.engine.Components.Attachment;
 import org.mitre.synthea.engine.Components.Exact;
@@ -163,16 +164,20 @@ public abstract class State implements Cloneable, Serializable {
 
   /**
    * Run the state. This processes the state, setting entered and exit times.
+   * This will terminate immediately if the patient is dead and `terminateOnDeath` is true.
    *
    * @param person
    *          the person being simulated
    * @param time
    *          the date within the simulated world
+   * @param terminateOnDeath
+   *          whether to terminate immediately and not process the state if the patient is dead
+   *          (has no effect on patients that are alive)
    * @return `true` if processing should continue to the next state, `false` if the processing
    *         should halt for this time step.
    */
-  public boolean run(Person person, long time) {
-    if (!person.alive(time)) {
+  public boolean run(Person person, long time, boolean terminateOnDeath) {
+    if (terminateOnDeath && !person.alive(time)) {
       return false;
     }
     if (this.entered == null) {
@@ -185,9 +190,13 @@ public abstract class State implements Cloneable, Serializable {
       // to indicate when the state actually completed.
       if (this instanceof Delayable) {
         this.exited = ((Delayable)this).next;
+      } else if (this instanceof CallSubmodule) {
+        this.exited = ((CallSubmodule)this).submoduleExited;
       } else {
         this.exited = time;
       }
+    } else if (this instanceof Terminal) {
+      this.exited = time;
     }
 
     return exit;
@@ -231,6 +240,7 @@ public abstract class State implements Cloneable, Serializable {
    */
   public static class CallSubmodule extends State {
     private String submodule;
+    private transient long submoduleExited;
 
     @Override
     public CallSubmodule clone() {
@@ -250,8 +260,23 @@ public abstract class State implements Cloneable, Serializable {
       boolean completed = submod.process(person, time);
 
       if (completed) {
+        // keep track of when the submodule exited,
+        // in case it was "rewinding time" when it completed
+        if (person.history.get(0).exited == null) {
+          // this happens when the patient dies in the submodule,
+          // so processing is going to stop anyway
+          // but just to be safe and not crash,
+          // we'll assume we exited at the current timestep
+          this.submoduleExited = time;
+        } else {
+          this.submoduleExited = person.history.get(0).exited;
+        }
+        
         // add the history from the submodule to this module's history, at the front
-        moduleHistory.addAll(0, person.history);
+        if (moduleHistory != person.history) {
+          // if the submodule is a java module, it didn't create its own history
+          moduleHistory.addAll(0, person.history);
+        }
         // clear the submodule history
         person.attributes.remove(submod.name);
         // reset person.history to this module's history
@@ -458,9 +483,38 @@ public abstract class State implements Cloneable, Serializable {
       if (this.next == null) {
         this.processOnce(person, time);
         this.next = this.endOfDelay(time, person);
+        if (this.next < time) {
+          // Don't allow a negative delay
+          this.next = time;
+        }
       }
 
       return ((time >= this.next) && person.alive(this.next));
+    }
+  }
+
+  public abstract static class LegacyStateWithUnitlessRV extends State {
+    protected Range range;
+    protected Exact exact;
+
+    @Override
+    public State clone() {
+      LegacyStateWithUnitlessRV clone = (LegacyStateWithUnitlessRV) super.clone();
+      clone.range = range;
+      clone.exact = exact;
+      return clone;
+    }
+
+    /**
+     * Based on attributes provided in JSON, determine whether this state was defined with legacy
+     * GMF (Version 1.0).
+     * @return True if the state was defined with legacy GMF
+     */
+    public boolean isLegacyGmf() {
+      if (this.exact != null || this.range != null) {
+        return true;
+      }
+      return false;
     }
   }
 
@@ -480,8 +534,21 @@ public abstract class State implements Cloneable, Serializable {
    * step) time.
    */
   public static class Delay extends Delayable {
-    private RangeWithUnit<Long> range;
-    private ExactWithUnit<Long> exact;
+    // For GMF 1.0 Support
+    private RangeWithUnit<Double> range;
+    private ExactWithUnit<Double> exact;
+    // For GMF 2.0 Support
+    private Distribution distribution;
+    private String unit;
+
+    @Override
+    protected void initialize(Module module, String name, JsonObject definition) {
+      super.initialize(module, name, definition);
+      if (distribution != null && !distribution.validate()) {
+        throw new IllegalStateException(
+            String.format("State %s contains an invalid distribution", this.name));
+      }
+    }
 
     @Override
     public Delay clone() {
@@ -491,15 +558,32 @@ public abstract class State implements Cloneable, Serializable {
 
     @Override
     public long endOfDelay(long time, Person person) {
-      if (exact != null) {
-        // use an exact quantity
-        return time + Utilities.convertTime(exact.unit, exact.quantity);
-      } else if (range != null) {
-        // use a range
-        return time + Utilities.convertTime(range.unit, (long) person.rand(range.low, range.high));
+      if (isLegacyGmf()) {
+        if (exact != null) {
+          // use an exact quantity
+          return time + Utilities.convertTime(exact.unit, exact.quantity);
+        } else if (range != null) {
+          // use a range
+          return time + Utilities.convertTime(range.unit, person.rand(range.low, range.high));
+        }
       } else {
-        throw new RuntimeException("Delay state has no exact or range: " + this);
+        if (distribution != null) {
+          return time + Utilities.convertTime(unit, (long) distribution.generate(person));
+        }
       }
+      throw new RuntimeException("Delay state has no distribution properties: " + this);
+    }
+
+    /**
+     * Based on attributes provided in JSON, determine whether this state was defined with legacy
+     * GMF (Version 1.0).
+     * @return True if the state was defined with legacy GMF
+     */
+    public boolean isLegacyGmf() {
+      if (this.exact != null || this.range != null) {
+        return true;
+      }
+      return false;
     }
   }
 
@@ -544,12 +628,16 @@ public abstract class State implements Cloneable, Serializable {
    */
   public static class SetAttribute extends State {
     private String attribute;
+    // For GMF 1.0 Support
     private Object value;
+    private Code valueCode;
     private Range<Double> range;
     private String expression;
     private transient ThreadLocal<ExpressionProcessor> threadExpProcessor;
     private String seriesData;
     private double period;
+    // For GMF 2.0 Support
+    private Distribution distribution;
 
     
     private ThreadLocal<ExpressionProcessor> getExpProcessor() {
@@ -572,7 +660,7 @@ public abstract class State implements Cloneable, Serializable {
       
       // special handling for integers
       if (value instanceof Double) {
-        double doubleVal = (double)value;
+        double doubleVal = (double) value;
 
         if (doubleVal == Math.rint(doubleVal)) {
           value = (int) doubleVal;
@@ -582,6 +670,11 @@ public abstract class State implements Cloneable, Serializable {
       // Series data default period is 1.0s
       if (period <= 0.0) {
         period = 1.0;
+      }
+
+      if (distribution != null && !distribution.validate()) {
+        throw new IllegalStateException(
+            String.format("State %s contains an invalid distribution", this.name));
       }
     }
 
@@ -612,6 +705,10 @@ public abstract class State implements Cloneable, Serializable {
         }
         
         value = data;
+      } else if (distribution != null) {
+        value = distribution.generate(person);
+      } else if (valueCode != null) {
+        value = valueCode;
       }
 
       if (value != null) {
@@ -993,11 +1090,13 @@ public abstract class State implements Cloneable, Serializable {
         person.record.conditionEndByState(time, conditionOnset);
       } else if (referencedByAttribute != null) {
         Entry condition = (Entry) person.attributes.get(referencedByAttribute);
-        person.getOnsetConditionRecord().onConditionEnd(
-            module.name, condition.codes.get(0).display, time
-        );
-        condition.stop = time;
-        person.record.conditionEnd(time, condition.type);
+        if (condition != null) {
+          person.getOnsetConditionRecord().onConditionEnd(
+              module.name, condition.codes.get(0).display, time
+          );
+          condition.stop = time;
+          person.record.conditionEnd(time, condition.type);
+        }
       } else if (codes != null) {
         person.getOnsetConditionRecord().onConditionEnd(module.name, codes.get(0).display, time);
         codes.forEach(code -> person.record.conditionEnd(time, code.code));
@@ -1015,15 +1114,33 @@ public abstract class State implements Cloneable, Serializable {
    * then the allergy will only be diagnosed when that future encounter occurs.
    */
   public static class AllergyOnset extends OnsetState {
+    private String allergyType;
+    private String category;
+    private List<ReactionProbabilities> reactions;
+
     @Override
     public void diagnose(Person person, long time) {
       String primaryCode = codes.get(0).code;
       entry = person.record.allergyStart(time, primaryCode);
       entry.name = this.name;
       entry.codes.addAll(codes);
+      HealthRecord.Allergy allergy = (HealthRecord.Allergy) entry;
+      allergy.allergyType = allergyType;
+      allergy.category = category;
 
       if (assignToAttribute != null) {
         person.attributes.put(assignToAttribute, entry);
+      }
+
+      if (this.reactions != null && !this.reactions.isEmpty()) {
+        HashMap<Code, HealthRecord.ReactionSeverity> reactions = new HashMap();
+        this.reactions.forEach(rp -> {
+          HealthRecord.ReactionSeverity rs = rp.generateSeverity(person);
+          if (rs != null) {
+            reactions.put(rp.getReaction(), rs);
+          }
+        });
+        allergy.reactions = reactions;
       }
 
       diagnosed = true;
@@ -1313,9 +1430,22 @@ public abstract class State implements Cloneable, Serializable {
   public static class Procedure extends Delayable {
     private List<Code> codes;
     private String reason;
+    // For GMF 1.0 Support
     private RangeWithUnit<Long> duration;
     private String assignToAttribute;
     private Long stop;
+    // For GMF 2.0 Support
+    private Distribution distribution;
+    private String unit;
+
+    @Override
+    protected void initialize(Module module, String name, JsonObject definition) {
+      super.initialize(module, name, definition);
+      if (distribution != null && !distribution.validate()) {
+        throw new IllegalStateException(
+            String.format("State %s contains an invalid distribution", this.name));
+      }
+    }
 
     @Override
     public Procedure clone() {
@@ -1325,7 +1455,7 @@ public abstract class State implements Cloneable, Serializable {
 
     @Override
     public long endOfDelay(long time, Person person) {
-      if (duration == null) {
+      if (duration == null && distribution == null) {
         return time;
       } else {
         return this.stop;
@@ -1355,9 +1485,17 @@ public abstract class State implements Cloneable, Serializable {
           }
         }
       }
-      if (duration != null && this.stop == null) {
-        double durationVal = person.rand(duration.low, duration.high);
-        this.stop = procedure.start + Utilities.convertTime(duration.unit, (long) durationVal);
+      if ((duration != null || distribution != null) && this.stop == null) {
+        double durationVal;
+        String procedureDurationUnit;
+        if (duration != null) {
+          durationVal = person.rand(duration.low, duration.high);
+          procedureDurationUnit = duration.unit;
+        } else {
+          durationVal = distribution.generate(person);
+          procedureDurationUnit = this.unit;
+        }
+        this.stop = procedure.start + Utilities.convertTime(procedureDurationUnit, durationVal);
         procedure.stop = this.stop;
       }
       // increment number of procedures by respective hospital
@@ -1389,14 +1527,22 @@ public abstract class State implements Cloneable, Serializable {
    * observation of MMSE that can lead to a diagnosis of Alzheimer's; MMSE is an observed value and
    * not a physical metric, so it should not be stored in a VitalSign.
    */
-  public static class VitalSign extends State {
+  public static class VitalSign extends LegacyStateWithUnitlessRV {
     private org.mitre.synthea.world.concepts.VitalSign vitalSign;
     private String unit;
-    private Range<Double> range;
-    private Exact<Double> exact;
     private String expression;
+    private Distribution distribution;
     private transient ThreadLocal<ExpressionProcessor> threadExpProcessor;
-    
+
+    @Override
+    protected void initialize(Module module, String name, JsonObject definition) {
+      super.initialize(module, name, definition);
+      if (distribution != null && !distribution.validate()) {
+        throw new IllegalStateException(
+            String.format("State %s contains an invalid distribution", this.name));
+      }
+    }
+
     private ThreadLocal<ExpressionProcessor> getExpProcessor() {
       // If the ThreadLocal instance hasn't been created yet, create it now
       if (threadExpProcessor == null) {
@@ -1419,16 +1565,25 @@ public abstract class State implements Cloneable, Serializable {
 
     @Override
     public boolean process(Person person, long time) {
-      if (exact != null) {
-        person.setVitalSign(vitalSign, new ConstantValueGenerator(person, exact.quantity));
-      } else if (range != null) {
-        person.setVitalSign(vitalSign, new RandomValueGenerator(person, range.low, range.high));
-      } else if (getExpProcessor().get() != null) {
-        Number value = (Number) getExpProcessor().get().evaluate(person, time);
-        person.setVitalSign(vitalSign, value.doubleValue());
+      if (isLegacyGmf()) {
+        if (exact != null) {
+          person.setVitalSign(vitalSign, new ConstantValueGenerator(person,
+              (double) exact.quantity));
+        } else if (range != null) {
+          person.setVitalSign(vitalSign, new RandomValueGenerator(person,
+              (double) range.low, (double) range.high));
+        }
       } else {
-        throw new RuntimeException(
-            "VitalSign state has no exact quantity or low/high range: " + this);
+        if (getExpProcessor().get() != null) {
+          Number value = (Number) getExpProcessor().get().evaluate(person, time);
+          person.setVitalSign(vitalSign, value.doubleValue());
+        } else if (distribution != null) {
+          person.setVitalSign(vitalSign, new RandomValueGenerator(person, distribution));
+        } else {
+          throw new RuntimeException(
+              "VitalSign state has no exact quantity, distribution, expression"
+                  + " or low/high range: " + this);
+        }
       }
 
       return true;
@@ -1467,10 +1622,8 @@ public abstract class State implements Cloneable, Serializable {
    * personal (e.g. lifestyle), social, and environmental history and health risk factors, as well
    * as administrative data such as marital status, race, ethnicity and religious affiliation.
    */
-  public static class Observation extends State {
+  public static class Observation extends LegacyStateWithUnitlessRV {
     private List<Code> codes;
-    private Range<Double> range;
-    private Exact<Object> exact;
     private Code valueCode;
     private String attribute;
     private org.mitre.synthea.world.concepts.VitalSign vitalSign;
@@ -1479,8 +1632,32 @@ public abstract class State implements Cloneable, Serializable {
     private String category;
     private String unit;
     private String expression;
+    private Distribution distribution;
     private transient ThreadLocal<ExpressionProcessor> threadExpProcessor;
-    
+
+    @Override
+    protected void initialize(Module module, String name, JsonObject definition) {
+      super.initialize(module, name, definition);
+      validate(module, name);
+    }
+
+    protected void validate(Module module, String name) {
+      if (exact != null || range != null) {
+        // units are required
+        if (StringUtils.isBlank(unit)) {
+          throw new RuntimeException(
+              "Observations with numeric quantities must contain non-blank units. "
+          + "Module \"" + module.name + "\": State \"" + name
+          + "\": Unit is missing, empty, or all whitespace");
+        }
+      }
+
+      if (distribution != null && !distribution.validate()) {
+        throw new IllegalStateException(
+            String.format("State %s contains an invalid distribution", this.name));
+      }
+    }
+
     private ThreadLocal<ExpressionProcessor> getExpProcessor() {
       // If the ThreadLocal instance hasn't been created yet, create it now
       if (threadExpProcessor == null) {
@@ -1510,28 +1687,35 @@ public abstract class State implements Cloneable, Serializable {
     public boolean process(Person person, long time) {
       String primaryCode = codes.get(0).code;
       Object value = null;
-      if (exact != null) {
-        value = exact.quantity;
-      } else if (range != null) {
-        value = person.rand(range.low, range.high, range.decimals);
-      } else if (attribute != null) {
-        value = person.attributes.get(attribute);
-      } else if (vitalSign != null) {
-        value = person.getVitalSign(vitalSign, time);
-      } else if (valueCode != null) {
-        value = valueCode;
-      } else if (threadExpProcessor != null
-          && threadExpProcessor.get() != null) {
-        value = threadExpProcessor.get().evaluate(person, time);
-      } else if (sampledData != null) {
-        // Capture the data lists from person attributes
-        sampledData.setSeriesData(person);
-        value = new SampledData(sampledData);
-      } else if (attachment != null) {
-        attachment.process(person);
-        value = new Attachment(attachment);
+      if (isLegacyGmf()) {
+        if (exact != null) {
+          value = exact.quantity;
+        }
+        if (range != null) {
+          value = person.rand((double) range.low, (double) range.high, range.decimals);
+        }
+      } else {
+        if (distribution != null) {
+          value = distribution.generate(person);
+        } else if (attribute != null) {
+          value = person.attributes.get(attribute);
+        } else if (vitalSign != null) {
+          value = person.getVitalSign(vitalSign, time);
+        } else if (valueCode != null) {
+          value = valueCode;
+        } else if (threadExpProcessor != null
+            && threadExpProcessor.get() != null) {
+          value = threadExpProcessor.get().evaluate(person, time);
+        } else if (sampledData != null) {
+          // Capture the data lists from person attributes
+          sampledData.setSeriesData(person);
+          value = new SampledData(sampledData);
+        } else if (attachment != null) {
+          attachment.process(person);
+          value = new Attachment(attachment);
+        }
       }
-      
+
       HealthRecord.Observation observation = person.record.observation(time, primaryCode, value);
       entry = observation;
       observation.name = this.name;
@@ -1551,6 +1735,14 @@ public abstract class State implements Cloneable, Serializable {
   private abstract static class ObservationGroup extends State {
     protected List<Code> codes;
     protected List<Observation> observations;
+
+    @Override
+    protected void initialize(Module module, String name, JsonObject definition) {
+      super.initialize(module, name, definition);
+      for (Observation observation : observations) {
+        observation.validate(module, name);
+      }
+    }
 
     public ObservationGroup clone() {
       ObservationGroup clone = (ObservationGroup) super.clone();
@@ -1738,13 +1930,12 @@ public abstract class State implements Cloneable, Serializable {
    * conditions, in these cases only the highest value is considered. See also the Symptom logical
    * condition type.
    */
-  public static class Symptom extends State {
+  public static class Symptom extends LegacyStateWithUnitlessRV {
     private String symptom;
     private String cause;
     private Double probability;
-    private Range<Integer> range;
-    private Exact<Integer> exact;
     public boolean addressed;
+    private Distribution distribution;
 
     @Override
     protected void initialize(Module module, String name, JsonObject definition) {
@@ -1756,6 +1947,10 @@ public abstract class State implements Cloneable, Serializable {
         probability = 1.0;
       }
       addressed = false;
+      if (distribution != null && !distribution.validate()) {
+        throw new IllegalStateException(
+            String.format("State %s contains an invalid distribution", this.name));
+      }
     }
 
     @Override
@@ -1768,15 +1963,28 @@ public abstract class State implements Cloneable, Serializable {
     public boolean process(Person person, long time) {
       //using the module name instead of the cause
       if (person.rand() <= probability) {
-        if (exact != null) {
-          person.setSymptom(this.module.name, cause, symptom, time, exact.quantity, addressed);
-        } else if (range != null) {
-          person.setSymptom(
-              this.module.name, cause, symptom, time, (int) person.rand(range.low, range.high),
-              addressed
-          );
+        if (isLegacyGmf()) {
+          if (exact != null) {
+            int quantity;
+            if (exact.quantity instanceof Double) {
+              quantity = ((Double) exact.quantity).intValue();
+            } else {
+              quantity = (int) exact.quantity;
+            }
+            person.setSymptom(this.module.name, cause, symptom, time, quantity, addressed);
+          } else if (range != null) {
+            person.setSymptom(
+                this.module.name, cause, symptom, time,
+                (int) person.rand((double) range.low, (double) range.high), addressed
+            );
+          }
         } else {
-          person.setSymptom(this.module.name, cause, symptom, time, 0, addressed);
+          if (distribution != null) {
+            person.setSymptom(this.module.name, cause, symptom, time,
+                (int) distribution.generate(person), addressed);
+          } else {
+            person.setSymptom(this.module.name, cause, symptom, time, 0, addressed);
+          }
         }
       }
       return true;
@@ -1907,8 +2115,8 @@ public abstract class State implements Cloneable, Serializable {
     private List<Code> codes;
     private String conditionOnset;
     private String referencedByAttribute;
-    private RangeWithUnit<Integer> range;
-    private ExactWithUnit<Integer> exact;
+    private RangeWithUnit<Double> range;
+    private ExactWithUnit<Double> exact;
 
     @Override
     public Death clone() {
@@ -1946,7 +2154,7 @@ public abstract class State implements Cloneable, Serializable {
         return true;
       } else if (range != null) {
         double duration = person.rand(range.low, range.high);
-        long timeOfDeath = time + Utilities.convertTime(range.unit, (long) duration);
+        long timeOfDeath = time + Utilities.convertTime(range.unit, duration);
         person.recordDeath(timeOfDeath, reason);
         return true;
       } else {

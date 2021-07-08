@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Calendar;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -43,11 +44,41 @@ public class Utilities {
       case "days":
         return TimeUnit.DAYS.toMillis(value);
       case "years":
-        return TimeUnit.DAYS.toMillis(365 * value);
+        return TimeUnit.DAYS.toMillis((long) 365.25 * value);
       case "months":
         return TimeUnit.DAYS.toMillis(30 * value);
       case "weeks":
         return TimeUnit.DAYS.toMillis(7 * value);
+      default:
+        throw new RuntimeException("Unexpected time unit: " + units);
+    }
+  }
+
+  /**
+   * Convert a quantity of time in a specified units into milliseconds.
+   *
+   * @param units
+   *          : "hours", "minutes", "seconds", "days", "weeks", "years", or "months"
+   * @param value
+   *          : quantity of units
+   * @return milliseconds
+   */
+  public static long convertTime(String units, double value) {
+    switch (units) {
+      case "hours":
+        return TimeUnit.MINUTES.toMillis((long)(60.0 * value));
+      case "minutes":
+        return TimeUnit.SECONDS.toMillis((long)(60.0 * value));
+      case "seconds":
+        return (long)(1000.0 * value);
+      case "days":
+        return TimeUnit.HOURS.toMillis((long)(24.0 * value));
+      case "years":
+        return TimeUnit.DAYS.toMillis((long)(365.25 * value));
+      case "months":
+        return TimeUnit.DAYS.toMillis((long)(30.0 * value));
+      case "weeks":
+        return TimeUnit.DAYS.toMillis((long)(7.0 * value));
       default:
         throw new RuntimeException("Unexpected time unit: " + units);
     }
@@ -109,7 +140,15 @@ public class Utilities {
   public static double convertRiskToTimestep(double risk, double originalPeriodInMS) {
     double currTimeStepInMS = Double.parseDouble(Config.get("generate.timestep"));
 
-    return 1 - Math.pow(1 - risk, currTimeStepInMS / originalPeriodInMS);
+    return convertRiskToTimestep(risk, originalPeriodInMS, currTimeStepInMS);
+  }
+  
+  /**
+   * Calculates 1 - (1-risk)^(newTimeStepInMS/originalPeriodInMS).
+   */
+  public static double convertRiskToTimestep(double risk, double originalPeriodInMS,
+      double newTimeStepInMS) {
+    return 1 - Math.pow(1 - risk, newTimeStepInMS / originalPeriodInMS);
   }
 
   /**
@@ -320,6 +359,8 @@ public class Utilities {
       .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
       .registerTypeAdapterFactory(InnerClassTypeAdapterFactory.of(Logic.class,"condition_type"))
       .registerTypeAdapterFactory(InnerClassTypeAdapterFactory.of(State.class, "type"))
+      // as of JDK16, GSON can no longer handle certain sdk classes
+      .registerTypeAdapter(Random.class, new SerializableTypeAdapter<Random>())
       .create();
   }
 

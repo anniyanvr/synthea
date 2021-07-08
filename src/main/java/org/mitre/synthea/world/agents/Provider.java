@@ -24,13 +24,13 @@ import org.mitre.synthea.helpers.Config;
 import org.mitre.synthea.helpers.RandomNumberGenerator;
 import org.mitre.synthea.helpers.SimpleCSV;
 import org.mitre.synthea.helpers.Utilities;
-import org.mitre.synthea.modules.LifecycleModule;
 import org.mitre.synthea.world.agents.behaviors.IProviderFinder;
 import org.mitre.synthea.world.agents.behaviors.ProviderFinderNearest;
 import org.mitre.synthea.world.agents.behaviors.ProviderFinderQuality;
 import org.mitre.synthea.world.agents.behaviors.ProviderFinderRandom;
 import org.mitre.synthea.world.concepts.ClinicianSpecialty;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
+import org.mitre.synthea.world.concepts.Names;
 import org.mitre.synthea.world.geography.Demographics;
 import org.mitre.synthea.world.geography.Location;
 import org.mitre.synthea.world.geography.quadtree.QuadTree;
@@ -60,7 +60,7 @@ public class Provider implements QuadTreeElement, Serializable {
   public static final String PROVIDER_SELECTION_BEHAVIOR =
       Config.get("generate.providers.selection_behavior", "nearest").toLowerCase();
   private static IProviderFinder providerFinder = buildProviderFinder();
-
+  
   public Map<String, Object> attributes;
   public String uuid;
   private String locationUuid;
@@ -74,6 +74,8 @@ public class Provider implements QuadTreeElement, Serializable {
   public String phone;
   public String type;
   public String ownership;
+  /** institutional (e.g. hospital) else professional (e.g. PCP) */
+  public boolean institutional;
   public int quality;
   private double revenue;
   private Point2D.Double coordinates;
@@ -314,21 +316,21 @@ public class Provider implements QuadTreeElement, Serializable {
         servicesProvided.add(EncounterType.INPATIENT);
 
         String hospitalFile = Config.get("generate.providers.hospitals.default_file");
-        loadProviders(location, hospitalFile, servicesProvided, clinicianSeed);
+        loadProviders(location, hospitalFile, servicesProvided, true, clinicianSeed);
 
         servicesProvided.add(EncounterType.WELLNESS);
         String vaFile = Config.get("generate.providers.veterans.default_file");
-        loadProviders(location, vaFile, servicesProvided, clinicianSeed);
+        loadProviders(location, vaFile, servicesProvided, true, clinicianSeed);
 
         servicesProvided.clear();
         servicesProvided.add(EncounterType.WELLNESS);
         String primaryCareFile = Config.get("generate.providers.primarycare.default_file");
-        loadProviders(location, primaryCareFile, servicesProvided, clinicianSeed);
+        loadProviders(location, primaryCareFile, servicesProvided, false, clinicianSeed);
         
         servicesProvided.clear();
         servicesProvided.add(EncounterType.URGENTCARE);
         String urgentcareFile = Config.get("generate.providers.urgentcare.default_file");
-        loadProviders(location, urgentcareFile, servicesProvided, clinicianSeed);
+        loadProviders(location, urgentcareFile, servicesProvided, true, clinicianSeed);
       
         statesLoaded.add(location.state);
         statesLoaded.add(Location.getAbbreviation(location.state));
@@ -347,10 +349,11 @@ public class Provider implements QuadTreeElement, Serializable {
    * @param location the state being loaded
    * @param filename Location of the file, relative to src/main/resources
    * @param servicesProvided Set of services provided by these facilities
+   * @param institutional If the provider is institutional (true) or professional (false)
    * @throws IOException if the file cannot be read
    */
   public static void loadProviders(Location location, String filename,
-      Set<EncounterType> servicesProvided, long clinicianSeed)
+      Set<EncounterType> servicesProvided, boolean institutional, long clinicianSeed)
       throws IOException {
     String resource = Utilities.readResource(filename);
     Iterator<? extends Map<String,String>> csv = SimpleCSV.parseLineByLine(resource);
@@ -367,6 +370,7 @@ public class Provider implements QuadTreeElement, Serializable {
           || (abbreviation != null && abbreviation.equalsIgnoreCase(currState))) {
 
         Provider parsed = csvLineToProvider(row);
+        parsed.institutional = institutional;
         parsed.servicesProvided.addAll(servicesProvided);
 
         if ("Yes".equals(row.remove("emergency"))) {
@@ -473,13 +477,8 @@ public class Provider implements QuadTreeElement, Serializable {
       clinician.attributes.put(Person.ZIP, provider.zip);
       clinician.attributes.put(Person.COORDINATE, provider.coordinates);
 
-      String firstName = LifecycleModule.fakeFirstName(gender, language, doc);
-      String lastName = LifecycleModule.fakeLastName(language, doc);
-
-      if (LifecycleModule.appendNumbersToNames) {
-        firstName = LifecycleModule.addHash(firstName);
-        lastName = LifecycleModule.addHash(lastName);
-      }
+      String firstName = Names.fakeFirstName(gender, language, doc);
+      String lastName = Names.fakeLastName(language, doc);
       clinician.attributes.put(Clinician.FIRST_NAME, firstName);
       clinician.attributes.put(Clinician.LAST_NAME, lastName);
       clinician.attributes.put(Clinician.NAME, firstName + " " + lastName);
