@@ -301,6 +301,30 @@
 </li>
 </ul>
 </li>
+<li class="blockList"><a name="org.mitre.synthea.engine.Distribution">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.Distribution</a> extends java.lang.Object implements Serializable</h3>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>kind</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.Kind.html" title="enum in org.mitre.synthea.engine">Distribution.Kind</a> kind</pre>
+</li>
+<li class="blockList">
+<h4>round</h4>
+<pre>java.lang.Boolean round</pre>
+</li>
+<li class="blockListLast">
+<h4>parameters</h4>
+<pre>java.util.HashMap&lt;K,V&gt; parameters</pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="blockList"><a name="org.mitre.synthea.engine.ExpressedConditionRecord">
 <!--   -->
 </a>
@@ -539,6 +563,11 @@
 </ul>
 </li>
 </ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.engine.Logic.ActiveAllergy">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/engine/Logic.ActiveAllergy.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.Logic.ActiveAllergy</a> extends org.mitre.synthea.engine.Logic.ActiveLogic implements Serializable</h3>
 </li>
 <li class="blockList"><a name="org.mitre.synthea.engine.Logic.ActiveCarePlan">
 <!--   -->
@@ -887,6 +916,50 @@
 </li>
 </ul>
 </li>
+<li class="blockList"><a name="org.mitre.synthea.engine.ReactionProbabilities">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/engine/ReactionProbabilities.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.ReactionProbabilities</a> extends java.lang.Object implements Serializable</h3>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>reaction</h4>
+<pre><a href="org/mitre/synthea/world/concepts/HealthRecord.Code.html" title="class in org.mitre.synthea.world.concepts">HealthRecord.Code</a> reaction</pre>
+</li>
+<li class="blockList">
+<h4>possibleSeverities</h4>
+<pre>java.util.List&lt;E&gt; possibleSeverities</pre>
+</li>
+<li class="blockListLast">
+<h4>severityDistribution</h4>
+<pre>org.apache.commons.math3.distribution.EnumeratedDistribution&lt;T&gt; severityDistribution</pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.engine.ReactionProbabilities.SeverityProbability">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/engine/ReactionProbabilities.SeverityProbability.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.ReactionProbabilities.SeverityProbability</a> extends java.lang.Object implements Serializable</h3>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>level</h4>
+<pre>java.lang.String level</pre>
+</li>
+<li class="blockListLast">
+<h4>value</h4>
+<pre>float value</pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="blockList"><a name="org.mitre.synthea.engine.State">
 <!--   -->
 </a>
@@ -975,6 +1048,25 @@
 <!--   -->
 </a>
 <h3>Class <a href="org/mitre/synthea/engine/State.AllergyOnset.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.AllergyOnset</a> extends org.mitre.synthea.engine.State.OnsetState implements Serializable</h3>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>allergyType</h4>
+<pre>java.lang.String allergyType</pre>
+</li>
+<li class="blockList">
+<h4>category</h4>
+<pre>java.lang.String category</pre>
+</li>
+<li class="blockListLast">
+<h4>reactions</h4>
+<pre>java.util.List&lt;E&gt; reactions</pre>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li class="blockList"><a name="org.mitre.synthea.engine.State.CallSubmodule">
 <!--   -->
@@ -1145,9 +1237,17 @@
 <h4>range</h4>
 <pre><a href="org/mitre/synthea/engine/Components.RangeWithUnit.html" title="class in org.mitre.synthea.engine">Components.RangeWithUnit</a>&lt;<a href="org/mitre/synthea/engine/Components.RangeWithUnit.html" title="type parameter in Components.RangeWithUnit">R</a> extends java.lang.Number&gt; range</pre>
 </li>
-<li class="blockListLast">
+<li class="blockList">
 <h4>exact</h4>
 <pre><a href="org/mitre/synthea/engine/Components.ExactWithUnit.html" title="class in org.mitre.synthea.engine">Components.ExactWithUnit</a>&lt;<a href="org/mitre/synthea/engine/Components.ExactWithUnit.html" title="type parameter in Components.ExactWithUnit">T</a>&gt; exact</pre>
+</li>
+<li class="blockList">
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
+</li>
+<li class="blockListLast">
+<h4>unit</h4>
+<pre>java.lang.String unit</pre>
 </li>
 </ul>
 </li>
@@ -1324,6 +1424,26 @@
 </a>
 <h3>Class <a href="org/mitre/synthea/engine/State.Initial.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.Initial</a> extends <a href="org/mitre/synthea/engine/State.html" title="class in org.mitre.synthea.engine">State</a> implements Serializable</h3>
 </li>
+<li class="blockList"><a name="org.mitre.synthea.engine.State.LegacyStateWithUnitlessRV">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/engine/State.LegacyStateWithUnitlessRV.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.LegacyStateWithUnitlessRV</a> extends <a href="org/mitre/synthea/engine/State.html" title="class in org.mitre.synthea.engine">State</a> implements Serializable</h3>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>range</h4>
+<pre><a href="org/mitre/synthea/engine/Components.Range.html" title="class in org.mitre.synthea.engine">Components.Range</a>&lt;<a href="org/mitre/synthea/engine/Components.Range.html" title="type parameter in Components.Range">R</a> extends java.lang.Number&gt; range</pre>
+</li>
+<li class="blockListLast">
+<h4>exact</h4>
+<pre><a href="org/mitre/synthea/engine/Components.Exact.html" title="class in org.mitre.synthea.engine">Components.Exact</a>&lt;<a href="org/mitre/synthea/engine/Components.Exact.html" title="type parameter in Components.Exact">T</a>&gt; exact</pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="blockList"><a name="org.mitre.synthea.engine.State.MedicationEnd">
 <!--   -->
 </a>
@@ -1432,7 +1552,7 @@
 <li class="blockList"><a name="org.mitre.synthea.engine.State.Observation">
 <!--   -->
 </a>
-<h3>Class <a href="org/mitre/synthea/engine/State.Observation.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.Observation</a> extends <a href="org/mitre/synthea/engine/State.html" title="class in org.mitre.synthea.engine">State</a> implements Serializable</h3>
+<h3>Class <a href="org/mitre/synthea/engine/State.Observation.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.Observation</a> extends <a href="org/mitre/synthea/engine/State.LegacyStateWithUnitlessRV.html" title="class in org.mitre.synthea.engine">State.LegacyStateWithUnitlessRV</a> implements Serializable</h3>
 <ul class="blockList">
 <li class="blockList">
 <h3>Serialized Fields</h3>
@@ -1440,14 +1560,6 @@
 <li class="blockList">
 <h4>codes</h4>
 <pre>java.util.List&lt;E&gt; codes</pre>
-</li>
-<li class="blockList">
-<h4>range</h4>
-<pre><a href="org/mitre/synthea/engine/Components.Range.html" title="class in org.mitre.synthea.engine">Components.Range</a>&lt;<a href="org/mitre/synthea/engine/Components.Range.html" title="type parameter in Components.Range">R</a> extends java.lang.Number&gt; range</pre>
-</li>
-<li class="blockList">
-<h4>exact</h4>
-<pre><a href="org/mitre/synthea/engine/Components.Exact.html" title="class in org.mitre.synthea.engine">Components.Exact</a>&lt;<a href="org/mitre/synthea/engine/Components.Exact.html" title="type parameter in Components.Exact">T</a>&gt; exact</pre>
 </li>
 <li class="blockList">
 <h4>valueCode</h4>
@@ -1477,9 +1589,13 @@
 <h4>unit</h4>
 <pre>java.lang.String unit</pre>
 </li>
-<li class="blockListLast">
+<li class="blockList">
 <h4>expression</h4>
 <pre>java.lang.String expression</pre>
+</li>
+<li class="blockListLast">
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
 </li>
 </ul>
 </li>
@@ -1557,9 +1673,17 @@
 <h4>assignToAttribute</h4>
 <pre>java.lang.String assignToAttribute</pre>
 </li>
-<li class="blockListLast">
+<li class="blockList">
 <h4>stop</h4>
 <pre>java.lang.Long stop</pre>
+</li>
+<li class="blockList">
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
+</li>
+<li class="blockListLast">
+<h4>unit</h4>
+<pre>java.lang.String unit</pre>
 </li>
 </ul>
 </li>
@@ -1582,6 +1706,10 @@
 <pre>java.lang.Object value</pre>
 </li>
 <li class="blockList">
+<h4>valueCode</h4>
+<pre><a href="org/mitre/synthea/world/concepts/HealthRecord.Code.html" title="class in org.mitre.synthea.world.concepts">HealthRecord.Code</a> valueCode</pre>
+</li>
+<li class="blockList">
 <h4>range</h4>
 <pre><a href="org/mitre/synthea/engine/Components.Range.html" title="class in org.mitre.synthea.engine">Components.Range</a>&lt;<a href="org/mitre/synthea/engine/Components.Range.html" title="type parameter in Components.Range">R</a> extends java.lang.Number&gt; range</pre>
 </li>
@@ -1593,9 +1721,13 @@
 <h4>seriesData</h4>
 <pre>java.lang.String seriesData</pre>
 </li>
-<li class="blockListLast">
+<li class="blockList">
 <h4>period</h4>
 <pre>double period</pre>
+</li>
+<li class="blockListLast">
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
 </li>
 </ul>
 </li>
@@ -1625,7 +1757,7 @@
 <li class="blockList"><a name="org.mitre.synthea.engine.State.Symptom">
 <!--   -->
 </a>
-<h3>Class <a href="org/mitre/synthea/engine/State.Symptom.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.Symptom</a> extends <a href="org/mitre/synthea/engine/State.html" title="class in org.mitre.synthea.engine">State</a> implements Serializable</h3>
+<h3>Class <a href="org/mitre/synthea/engine/State.Symptom.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.Symptom</a> extends <a href="org/mitre/synthea/engine/State.LegacyStateWithUnitlessRV.html" title="class in org.mitre.synthea.engine">State.LegacyStateWithUnitlessRV</a> implements Serializable</h3>
 <ul class="blockList">
 <li class="blockList">
 <h3>Serialized Fields</h3>
@@ -1643,16 +1775,12 @@
 <pre>java.lang.Double probability</pre>
 </li>
 <li class="blockList">
-<h4>range</h4>
-<pre><a href="org/mitre/synthea/engine/Components.Range.html" title="class in org.mitre.synthea.engine">Components.Range</a>&lt;<a href="org/mitre/synthea/engine/Components.Range.html" title="type parameter in Components.Range">R</a> extends java.lang.Number&gt; range</pre>
-</li>
-<li class="blockList">
-<h4>exact</h4>
-<pre><a href="org/mitre/synthea/engine/Components.Exact.html" title="class in org.mitre.synthea.engine">Components.Exact</a>&lt;<a href="org/mitre/synthea/engine/Components.Exact.html" title="type parameter in Components.Exact">T</a>&gt; exact</pre>
-</li>
-<li class="blockListLast">
 <h4>addressed</h4>
 <pre>boolean addressed</pre>
+</li>
+<li class="blockListLast">
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
 </li>
 </ul>
 </li>
@@ -1666,7 +1794,7 @@
 <li class="blockList"><a name="org.mitre.synthea.engine.State.VitalSign">
 <!--   -->
 </a>
-<h3>Class <a href="org/mitre/synthea/engine/State.VitalSign.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.VitalSign</a> extends <a href="org/mitre/synthea/engine/State.html" title="class in org.mitre.synthea.engine">State</a> implements Serializable</h3>
+<h3>Class <a href="org/mitre/synthea/engine/State.VitalSign.html" title="class in org.mitre.synthea.engine">org.mitre.synthea.engine.State.VitalSign</a> extends <a href="org/mitre/synthea/engine/State.LegacyStateWithUnitlessRV.html" title="class in org.mitre.synthea.engine">State.LegacyStateWithUnitlessRV</a> implements Serializable</h3>
 <ul class="blockList">
 <li class="blockList">
 <h3>Serialized Fields</h3>
@@ -1680,16 +1808,12 @@
 <pre>java.lang.String unit</pre>
 </li>
 <li class="blockList">
-<h4>range</h4>
-<pre><a href="org/mitre/synthea/engine/Components.Range.html" title="class in org.mitre.synthea.engine">Components.Range</a>&lt;<a href="org/mitre/synthea/engine/Components.Range.html" title="type parameter in Components.Range">R</a> extends java.lang.Number&gt; range</pre>
-</li>
-<li class="blockList">
-<h4>exact</h4>
-<pre><a href="org/mitre/synthea/engine/Components.Exact.html" title="class in org.mitre.synthea.engine">Components.Exact</a>&lt;<a href="org/mitre/synthea/engine/Components.Exact.html" title="type parameter in Components.Exact">T</a>&gt; exact</pre>
-</li>
-<li class="blockListLast">
 <h4>expression</h4>
 <pre>java.lang.String expression</pre>
+</li>
+<li class="blockListLast">
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
 </li>
 </ul>
 </li>
@@ -2173,13 +2297,9 @@
 <li class="blockList">
 <h3>Serialized Fields</h3>
 <ul class="blockList">
-<li class="blockList">
-<h4>low</h4>
-<pre>double low</pre>
-</li>
 <li class="blockListLast">
-<h4>high</h4>
-<pre>double high</pre>
+<h4>distribution</h4>
+<pre><a href="org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a> distribution</pre>
 </li>
 </ul>
 </li>
@@ -2458,6 +2578,10 @@
 <h3>Serialized Fields</h3>
 <ul class="blockList">
 <li class="blockList">
+<h4>payerAdjustment</h4>
+<pre><a href="org/mitre/synthea/world/agents/behaviors/IPayerAdjustment.html" title="interface in org.mitre.synthea.world.agents.behaviors">IPayerAdjustment</a> payerAdjustment</pre>
+</li>
+<li class="blockList">
 <h4>attributes</h4>
 <pre>java.util.Map&lt;K,V&gt; attributes</pre>
 </li>
@@ -2617,23 +2741,10 @@
 <pre>java.util.List&lt;E&gt; history</pre>
 <div class="block">History of the currently active module.</div>
 </li>
-<li class="blockList">
-<h4>payerHistory</h4>
-<pre><a href="org/mitre/synthea/world/agents/Payer.html" title="class in org.mitre.synthea.world.agents">Payer</a>[] payerHistory</pre>
-<div class="block">Person's Payer History.
- Each element in payerHistory array corresponds to the insurance held at that age.</div>
-</li>
-<li class="blockList">
-<h4>payerOwnerHistory</h4>
-<pre>java.lang.String[] payerOwnerHistory</pre>
-</li>
-<li class="blockList">
-<h4>annualHealthExpenses</h4>
-<pre>java.util.Map&lt;K,V&gt; annualHealthExpenses</pre>
-</li>
 <li class="blockListLast">
-<h4>annualHealthCoverage</h4>
-<pre>java.util.Map&lt;K,V&gt; annualHealthCoverage</pre>
+<h4>coverage</h4>
+<pre><a href="org/mitre/synthea/world/concepts/CoverageRecord.html" title="class in org.mitre.synthea.world.concepts">CoverageRecord</a> coverage</pre>
+<div class="block">Record of insurance coverage.</div>
 </li>
 </ul>
 </li>
@@ -2727,6 +2838,11 @@
 <pre>java.lang.String ownership</pre>
 </li>
 <li class="blockList">
+<h4>institutional</h4>
+<pre>boolean institutional</pre>
+<div class="block">institutional (e.g. hospital) else professional (e.g. PCP)</div>
+</li>
+<li class="blockList">
 <h4>quality</h4>
 <pre>int quality</pre>
 </li>
@@ -2753,35 +2869,239 @@
 </ul>
 </li>
 <li class="blockList">
+<h2 title="Package">Package&nbsp;org.mitre.synthea.world.agents.behaviors</h2>
+<ul class="blockList">
+<li class="blockList"><a name="org.mitre.synthea.world.agents.behaviors.PayerAdjustmentFixed">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/agents/behaviors/PayerAdjustmentFixed.html" title="class in org.mitre.synthea.world.agents.behaviors">org.mitre.synthea.world.agents.behaviors.PayerAdjustmentFixed</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>-1515831606680338099L</dd>
+</dl>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockListLast">
+<h4>rate</h4>
+<pre>double rate</pre>
+<div class="block">Fixed adjustment rate.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.world.agents.behaviors.PayerAdjustmentNone">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/agents/behaviors/PayerAdjustmentNone.html" title="class in org.mitre.synthea.world.agents.behaviors">org.mitre.synthea.world.agents.behaviors.PayerAdjustmentNone</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>3288715364746907944L</dd>
+</dl>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.world.agents.behaviors.PayerAdjustmentRandom">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/agents/behaviors/PayerAdjustmentRandom.html" title="class in org.mitre.synthea.world.agents.behaviors">org.mitre.synthea.world.agents.behaviors.PayerAdjustmentRandom</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>-5292509643177122361L</dd>
+</dl>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockListLast">
+<h4>rate</h4>
+<pre>double rate</pre>
+<div class="block">Maximum adjustment rate.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList">
 <h2 title="Package">Package&nbsp;org.mitre.synthea.world.concepts</h2>
 <ul class="blockList">
 <li class="blockList"><a name="org.mitre.synthea.world.concepts.Claim">
 <!--   -->
 </a>
 <h3>Class <a href="org/mitre/synthea/world/concepts/Claim.html" title="class in org.mitre.synthea.world.concepts">org.mitre.synthea.world.concepts.Claim</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>-3565704321813987656L</dd>
+</dl>
 <ul class="blockList">
 <li class="blockList">
 <h3>Serialized Fields</h3>
 <ul class="blockList">
 <li class="blockList">
-<h4>mainEntry</h4>
-<pre><a href="org/mitre/synthea/world/concepts/HealthRecord.Entry.html" title="class in org.mitre.synthea.world.concepts">HealthRecord.Entry</a> mainEntry</pre>
+<h4>payer</h4>
+<pre><a href="org/mitre/synthea/world/agents/Payer.html" title="class in org.mitre.synthea.world.agents">Payer</a> payer</pre>
 </li>
 <li class="blockList">
-<h4>coveredCost</h4>
-<pre>double coveredCost</pre>
+<h4>secondaryPayer</h4>
+<pre><a href="org/mitre/synthea/world/agents/Payer.html" title="class in org.mitre.synthea.world.agents">Payer</a> secondaryPayer</pre>
+</li>
+<li class="blockList">
+<h4>person</h4>
+<pre><a href="org/mitre/synthea/world/agents/Person.html" title="class in org.mitre.synthea.world.agents">Person</a> person</pre>
+</li>
+<li class="blockList">
+<h4>mainEntry</h4>
+<pre><a href="org/mitre/synthea/world/concepts/Claim.ClaimEntry.html" title="class in org.mitre.synthea.world.concepts">Claim.ClaimEntry</a> mainEntry</pre>
+</li>
+<li class="blockList">
+<h4>items</h4>
+<pre>java.util.List&lt;E&gt; items</pre>
+</li>
+<li class="blockListLast">
+<h4>totals</h4>
+<pre><a href="org/mitre/synthea/world/concepts/Claim.ClaimEntry.html" title="class in org.mitre.synthea.world.concepts">Claim.ClaimEntry</a> totals</pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.world.concepts.Claim.ClaimEntry">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/concepts/Claim.ClaimEntry.html" title="class in org.mitre.synthea.world.concepts">org.mitre.synthea.world.concepts.Claim.ClaimEntry</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>1871121895630816723L</dd>
+</dl>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>entry</h4>
+<pre><a href="org/mitre/synthea/world/concepts/HealthRecord.Entry.html" title="class in org.mitre.synthea.world.concepts">HealthRecord.Entry</a> entry</pre>
+</li>
+<li class="blockList">
+<h4>cost</h4>
+<pre>double cost</pre>
+<div class="block">total cost of the entry.</div>
+</li>
+<li class="blockList">
+<h4>copay</h4>
+<pre>double copay</pre>
+<div class="block">copay paid by patient.</div>
+</li>
+<li class="blockList">
+<h4>deductible</h4>
+<pre>double deductible</pre>
+<div class="block">deductible paid by patient.</div>
+</li>
+<li class="blockList">
+<h4>adjustment</h4>
+<pre>double adjustment</pre>
+<div class="block">amount the charge was decreased by payer adjustment.</div>
+</li>
+<li class="blockList">
+<h4>coinsurance</h4>
+<pre>double coinsurance</pre>
+<div class="block">coinsurance paid by payer.</div>
+</li>
+<li class="blockList">
+<h4>payer</h4>
+<pre>double payer</pre>
+<div class="block">otherwise paid by payer.</div>
+</li>
+<li class="blockList">
+<h4>secondaryPayer</h4>
+<pre>double secondaryPayer</pre>
+<div class="block">otherwise paid by secondary payer.</div>
+</li>
+<li class="blockListLast">
+<h4>pocket</h4>
+<pre>double pocket</pre>
+<div class="block">otherwise paid by patient out of pocket.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.world.concepts.CoverageRecord">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/concepts/CoverageRecord.html" title="class in org.mitre.synthea.world.concepts">org.mitre.synthea.world.concepts.CoverageRecord</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>771457063723016307L</dd>
+</dl>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>person</h4>
+<pre><a href="org/mitre/synthea/world/agents/Person.html" title="class in org.mitre.synthea.world.agents">Person</a> person</pre>
+</li>
+<li class="blockListLast">
+<h4>planHistory</h4>
+<pre>java.util.List&lt;E&gt; planHistory</pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.world.concepts.CoverageRecord.Plan">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/concepts/CoverageRecord.Plan.html" title="class in org.mitre.synthea.world.concepts">org.mitre.synthea.world.concepts.CoverageRecord.Plan</a> extends java.lang.Object implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>-547445624583743525L</dd>
+</dl>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>id</h4>
+<pre>java.lang.String id</pre>
+</li>
+<li class="blockList">
+<h4>start</h4>
+<pre>long start</pre>
+</li>
+<li class="blockList">
+<h4>stop</h4>
+<pre>long stop</pre>
 </li>
 <li class="blockList">
 <h4>payer</h4>
 <pre><a href="org/mitre/synthea/world/agents/Payer.html" title="class in org.mitre.synthea.world.agents">Payer</a> payer</pre>
 </li>
 <li class="blockList">
-<h4>person</h4>
-<pre><a href="org/mitre/synthea/world/agents/Person.html" title="class in org.mitre.synthea.world.agents">Person</a> person</pre>
+<h4>secondaryPayer</h4>
+<pre><a href="org/mitre/synthea/world/agents/Payer.html" title="class in org.mitre.synthea.world.agents">Payer</a> secondaryPayer</pre>
+</li>
+<li class="blockList">
+<h4>owner</h4>
+<pre>java.lang.String owner</pre>
+</li>
+<li class="blockList">
+<h4>ownerName</h4>
+<pre>java.lang.String ownerName</pre>
+</li>
+<li class="blockList">
+<h4>totalExpenses</h4>
+<pre>java.lang.Double totalExpenses</pre>
+</li>
+<li class="blockList">
+<h4>totalCoverage</h4>
+<pre>java.lang.Double totalCoverage</pre>
 </li>
 <li class="blockListLast">
-<h4>items</h4>
-<pre>java.util.List&lt;E&gt; items</pre>
+<h4>remainingDeductible</h4>
+<pre>java.lang.Double remainingDeductible</pre>
 </li>
 </ul>
 </li>
@@ -2863,6 +3183,30 @@
 <h4>death</h4>
 <pre>java.lang.Long death</pre>
 <div class="block">recorded death date/time.</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="blockList"><a name="org.mitre.synthea.world.concepts.HealthRecord.Allergy">
+<!--   -->
+</a>
+<h3>Class <a href="org/mitre/synthea/world/concepts/HealthRecord.Allergy.html" title="class in org.mitre.synthea.world.concepts">org.mitre.synthea.world.concepts.HealthRecord.Allergy</a> extends <a href="org/mitre/synthea/world/concepts/HealthRecord.Entry.html" title="class in org.mitre.synthea.world.concepts">HealthRecord.Entry</a> implements Serializable</h3>
+<ul class="blockList">
+<li class="blockList">
+<h3>Serialized Fields</h3>
+<ul class="blockList">
+<li class="blockList">
+<h4>allergyType</h4>
+<pre>java.lang.String allergyType</pre>
+</li>
+<li class="blockList">
+<h4>category</h4>
+<pre>java.lang.String category</pre>
+</li>
+<li class="blockListLast">
+<h4>reactions</h4>
+<pre>java.util.HashMap&lt;K,V&gt; reactions</pre>
 </li>
 </ul>
 </li>
@@ -3611,10 +3955,15 @@
 <h4>state</h4>
 <pre>java.lang.String state</pre>
 </li>
-<li class="blockListLast">
+<li class="blockList">
 <h4>demographics</h4>
 <pre>java.util.Map&lt;K,V&gt; demographics</pre>
 <div class="block">Map of CityId to Demographics.</div>
+</li>
+<li class="blockListLast">
+<h4>socialDeterminantsOfHealth</h4>
+<pre>java.util.Map&lt;K,V&gt; socialDeterminantsOfHealth</pre>
+<div class="block">Map of County Name to attributes and probabilities.</div>
 </li>
 </ul>
 </li>

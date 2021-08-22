@@ -144,37 +144,48 @@
 <td class="colLast">&nbsp;</td>
 </tr>
 <tr class="altColor">
+<td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Distribution.html" title="class in org.mitre.synthea.engine">Distribution</a></td>
+<td class="colLast">
+<div class="block">Representation of different types of distributions that can be used to represent
+ random variables used in Synthea States.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/ExpressedConditionRecord.html" title="class in org.mitre.synthea.engine">ExpressedConditionRecord</a></td>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/ExpressedSymptom.html" title="class in org.mitre.synthea.engine">ExpressedSymptom</a></td>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Generator.html" title="class in org.mitre.synthea.engine">Generator</a></td>
 <td class="colLast">
 <div class="block">Generator creates a population by running the generic modules each timestep per Person.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Generator.GeneratorOptions.html" title="class in org.mitre.synthea.engine">Generator.GeneratorOptions</a></td>
 <td class="colLast">
 <div class="block">Helper class following the "Parameter Object" pattern.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/HealthRecordEditors.html" title="class in org.mitre.synthea.engine">HealthRecordEditors</a></td>
 <td class="colLast">
 <div class="block">A singleton class for managing all of the implementations of HealthRecordEditor.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Logic.html" title="class in org.mitre.synthea.engine">Logic</a></td>
 <td class="colLast">
 <div class="block">Logic represents any portion of a generic module that requires a logical
  expression.</div>
 </td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Logic.ActiveAllergy.html" title="class in org.mitre.synthea.engine">Logic.ActiveAllergy</a></td>
+<td class="colLast">&nbsp;</td>
 </tr>
 <tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Logic.ActiveCarePlan.html" title="class in org.mitre.synthea.engine">Logic.ActiveCarePlan</a></td>
@@ -329,6 +340,17 @@
 </td>
 </tr>
 <tr class="altColor">
+<td class="colFirst"><a href="../../../../org/mitre/synthea/engine/ReactionProbabilities.html" title="class in org.mitre.synthea.engine">ReactionProbabilities</a></td>
+<td class="colLast">
+<div class="block">ReactionProbabilities is a structure to capture the kind and severity of reaction for a
+ given AllergyIntolerance.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><a href="../../../../org/mitre/synthea/engine/ReactionProbabilities.SeverityProbability.html" title="class in org.mitre.synthea.engine">ReactionProbabilities.SeverityProbability</a></td>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.html" title="class in org.mitre.synthea.engine">State</a></td>
 <td class="colLast">&nbsp;</td>
 </tr>
@@ -459,97 +481,101 @@
 </td>
 </tr>
 <tr class="altColor">
+<td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.LegacyStateWithUnitlessRV.html" title="class in org.mitre.synthea.engine">State.LegacyStateWithUnitlessRV</a></td>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.MedicationEnd.html" title="class in org.mitre.synthea.engine">State.MedicationEnd</a></td>
 <td class="colLast">
 <div class="block">The MedicationEnd state type indicates a point in the module where a currently prescribed
  medication should be ended.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.MedicationOrder.html" title="class in org.mitre.synthea.engine">State.MedicationOrder</a></td>
 <td class="colLast">
 <div class="block">The MedicationOrder state type indicates a point in the module where a medication is
  prescribed.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.MultiObservation.html" title="class in org.mitre.synthea.engine">State.MultiObservation</a></td>
 <td class="colLast">
 <div class="block">The MultiObservation state indicates that some number of Observations should be
  grouped together as a single observation.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.Observation.html" title="class in org.mitre.synthea.engine">State.Observation</a></td>
 <td class="colLast">
 <div class="block">The Observation state type indicates a point in the module where an observation is recorded.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.Physiology.html" title="class in org.mitre.synthea.engine">State.Physiology</a></td>
 <td class="colLast">
 <div class="block">The Physiology state executes a physiology simulation according to the provided
  configuration options.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.Procedure.html" title="class in org.mitre.synthea.engine">State.Procedure</a></td>
 <td class="colLast">
 <div class="block">The Procedure state type indicates a point in the module where a procedure should be performed.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.SetAttribute.html" title="class in org.mitre.synthea.engine">State.SetAttribute</a></td>
 <td class="colLast">
 <div class="block">The SetAttribute state type sets a specified attribute on the patient entity.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.Simple.html" title="class in org.mitre.synthea.engine">State.Simple</a></td>
 <td class="colLast">
 <div class="block">The Simple state type indicates a state that performs no additional actions, adds no additional
  information to the patient entity, and just transitions to the next state.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.SupplyList.html" title="class in org.mitre.synthea.engine">State.SupplyList</a></td>
 <td class="colLast">
 <div class="block">The SupplyList state includes a list of supplies that are needed for the current encounter.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.Symptom.html" title="class in org.mitre.synthea.engine">State.Symptom</a></td>
 <td class="colLast">
 <div class="block">The Symptom state type adds or updates a patient's symptom.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.Terminal.html" title="class in org.mitre.synthea.engine">State.Terminal</a></td>
 <td class="colLast">
 <div class="block">The Terminal state type indicates the end of the module progression.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/State.VitalSign.html" title="class in org.mitre.synthea.engine">State.VitalSign</a></td>
 <td class="colLast">
 <div class="block">The VitalSign state type indicates a point in the module where a patient's vital sign is set.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.html" title="class in org.mitre.synthea.engine">Transition</a></td>
 <td class="colLast">
 <div class="block">Transition represents all the transition types within the generic module
  framework.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.ComplexTransition.html" title="class in org.mitre.synthea.engine">Transition.ComplexTransition</a></td>
 <td class="colLast">
 <div class="block">Complex transitions are a combination of direct, distributed, and conditional
  transitions.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.ComplexTransitionOption.html" title="class in org.mitre.synthea.engine">Transition.ComplexTransitionOption</a></td>
 <td class="colLast">
 <div class="block">A DistributedTransitionOption represents a transition option with any of: - a
@@ -557,14 +583,14 @@
  distributions and transitions.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.ConditionalTransition.html" title="class in org.mitre.synthea.engine">Transition.ConditionalTransition</a></td>
 <td class="colLast">
 <div class="block">Conditional transitions will transition to one of several possible states
  based on conditional logic.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.ConditionalTransitionOption.html" title="class in org.mitre.synthea.engine">Transition.ConditionalTransitionOption</a></td>
 <td class="colLast">
 <div class="block">A ConditionalTransitionOption represents a single destination state, with a
@@ -572,20 +598,20 @@
  transitioned to.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.DirectTransition.html" title="class in org.mitre.synthea.engine">Transition.DirectTransition</a></td>
 <td class="colLast">
 <div class="block">Direct transitions are the simplest of transitions.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.DistributedTransition.html" title="class in org.mitre.synthea.engine">Transition.DistributedTransition</a></td>
 <td class="colLast">
 <div class="block">Distributed transitions will transition to one of several possible states
  based on the configured distribution.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.DistributedTransitionOption.html" title="class in org.mitre.synthea.engine">Transition.DistributedTransitionOption</a></td>
 <td class="colLast">
 <div class="block">A DistributedTransitionOption represents a single destination state, with a
@@ -593,27 +619,42 @@
  attribute containing the distribution percentage.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.LookupTableTransition.html" title="class in org.mitre.synthea.engine">Transition.LookupTableTransition</a></td>
 <td class="colLast">
 <div class="block">LookupTable transitions will transition to one of any number of possible states
  based on probabilities for each state extacted from a table.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.LookupTableTransitionOption.html" title="class in org.mitre.synthea.engine">Transition.LookupTableTransitionOption</a></td>
 <td class="colLast">
 <div class="block">A LookupTableTransitionOption represents a destination state which will be
  compared with a table lookup to find its probability and attributes.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Transition.NamedDistribution.html" title="class in org.mitre.synthea.engine">Transition.NamedDistribution</a></td>
 <td class="colLast">
 <div class="block">Helper class for distributions, which may either be a double, or a
  NamedDistribution with an attribute to fetch the desired probability from and
  a default.</div>
 </td>
+</tr>
+</tbody>
+</table>
+</li>
+<li class="blockList">
+<table class="typeSummary" border="0" cellpadding="3" cellspacing="0" summary="Enum Summary table, listing enums, and an explanation">
+<caption><span>Enum Summary</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Enum</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<td class="colFirst"><a href="../../../../org/mitre/synthea/engine/Distribution.Kind.html" title="enum in org.mitre.synthea.engine">Distribution.Kind</a></td>
+<td class="colLast">&nbsp;</td>
 </tr>
 </tbody>
 </table>
