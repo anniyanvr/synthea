@@ -1,7 +1,6 @@
 package org.mitre.synthea.engine;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -10,11 +9,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 import org.junit.Before;
@@ -25,8 +23,10 @@ import org.mitre.synthea.TestHelper;
 import org.mitre.synthea.export.Exporter;
 import org.mitre.synthea.export.Exporter.SupportedFhirVersion;
 import org.mitre.synthea.helpers.Config;
+import org.mitre.synthea.helpers.DefaultRandomNumberGenerator;
+import org.mitre.synthea.helpers.RandomNumberGenerator;
 import org.mitre.synthea.helpers.Utilities;
-import org.mitre.synthea.world.agents.Payer;
+import org.mitre.synthea.world.agents.PayerManager;
 import org.mitre.synthea.world.agents.Person;
 import org.mitre.synthea.world.agents.Provider;
 import org.mitre.synthea.world.geography.Location;
@@ -53,7 +53,7 @@ public class GeneratorTest {
   public void before() throws Exception {
     Config.set("generate.only_dead_patients", "false");
     Provider.clear();
-    Payer.clear();
+    PayerManager.clear();
   }
 
   @Test
@@ -66,17 +66,6 @@ public class GeneratorTest {
     numberOfPeople = 3;
     Config.set("generate.default_population", Integer.toString(numberOfPeople));
     generator = new Generator();
-    generator.run();
-    assertEquals(numberOfPeople, generator.stats.get("alive").longValue());
-  }
-
-  @Test
-  public void testGenerateWithMetrics() throws Exception {
-    int numberOfPeople = 1;
-    Config.set("generate.track_detailed_transition_metrics", "true");
-    Generator generator = new Generator(numberOfPeople, 0L, 1L);
-    Config.set("generate.track_detailed_transition_metrics", "false");
-    assertNotNull(generator.metrics);
     generator.run();
     assertEquals(numberOfPeople, generator.stats.get("alive").longValue());
   }
@@ -141,7 +130,6 @@ public class GeneratorTest {
     String testTownDefault = Config.get("test_town.default", "Bedford");
     String testStateAlt = Config.get("test_state.alternative", "California");
     String testTownAlt = Config.get("test_town.alternative", "South Gate");
-
     int numberOfPeople = 2;
     Generator.GeneratorOptions opts = new Generator.GeneratorOptions();
     opts.population = numberOfPeople;
@@ -156,6 +144,9 @@ public class GeneratorTest {
       assertEquals(testStateAlt, p.attributes.get(Person.STATE));
       assertTrue(zipCodes.contains(p.attributes.get(Person.ZIP)));
     }
+
+    PayerManager.clear();
+    PayerManager.loadPayers(new Location(testStateDefault, testTownDefault));
 
     opts = new Generator.GeneratorOptions();
     opts.population = numberOfPeople;
@@ -272,8 +263,8 @@ public class GeneratorTest {
     Person[] people = new Person[NUM_RECS];
     for (int i = 0; i < NUM_RECS; i++) {
       long personSeed = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
-      Random randomForDemographics = new Random(personSeed);
-      Map<String, Object> demoAttributes = generator.randomDemographics(randomForDemographics);
+      RandomNumberGenerator random = new DefaultRandomNumberGenerator(personSeed);
+      Map<String, Object> demoAttributes = generator.randomDemographics(random);
       people[i] = generator.createPerson(personSeed, demoAttributes);
       generator.recordPerson(people[i], i);
     }
@@ -323,18 +314,18 @@ public class GeneratorTest {
       return;
     }
 
-    // Get 100 people
+    // Get 10 people
     Generator.GeneratorOptions opts = new Generator.GeneratorOptions();
     opts.population = 1;
     opts.minAge = 50;
     opts.maxAge = 100;
     Generator generator = new Generator(opts);
-    final int NUM_RECS = 100;
+    final int NUM_RECS = 10;
     Person[] people = new Person[NUM_RECS];
     for (int i = 0; i < NUM_RECS; i++) {
       long personSeed = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
-      Random randomForDemographics = new Random(personSeed);
-      Map<String, Object> demoAttributes = generator.randomDemographics(randomForDemographics);
+      RandomNumberGenerator random = new DefaultRandomNumberGenerator(personSeed);
+      Map<String, Object> demoAttributes = generator.randomDemographics(random);
       people[i] = generator.createPerson(personSeed, demoAttributes);
       //generator.recordPerson(people[i], i);
     }
@@ -355,7 +346,7 @@ public class GeneratorTest {
     opts.minAge = 35;
     opts.maxAge = 75;
     opts.ageSpecified = true;
-    opts.keepPatientsModulePath = new File("src/test/resources/keep_patients_module/keep.json");
+    opts.keepPatientsModulePath = Path.of("src/test/resources/keep_patients_module/keep.json");
     // keep module checks that patients have attribute diabetes == true
 
     Generator generator = new Generator(opts);

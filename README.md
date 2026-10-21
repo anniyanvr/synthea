@@ -2,7 +2,7 @@
 
 Synthea<sup>TM</sup> is a Synthetic Patient Population Simulator. The goal is to output synthetic, realistic (but not real), patient data and associated health records in a variety of formats.
 
-Read our [wiki](https://github.com/synthetichealth/synthea/wiki) for more information.
+Read our [wiki](https://github.com/synthetichealth/synthea/wiki) and [Frequently Asked Questions](https://github.com/synthetichealth/synthea/wiki/Frequently-Asked-Questions) for more information.
 
 Currently, Synthea<sup>TM</sup> features include:
 - Birth to Death Lifecycle
@@ -13,7 +13,7 @@ Currently, Synthea<sup>TM</sup> features include:
 - Primary Care Encounters, Emergency Room Encounters, and Symptom-Driven Encounters
 - Conditions, Allergies, Medications, Vaccinations, Observations/Vitals, Labs, Procedures, CarePlans
 - Formats
-  - HL7 FHIR (STU3 v3.0.1, DSTU2 v1.0.2 and R4)
+  - HL7 FHIR (R4, STU3 v3.0.1, and DSTU2 v1.0.2)
   - Bulk FHIR in ndjson format (set `exporter.fhir.bulk_data = true` to activate)
   - C-CDA (set `exporter.ccda.export = true` to activate)
   - CSV (set `exporter.csv.export = true` to activate)
@@ -27,7 +27,7 @@ These instructions are intended for those wishing to examine the Synthea source 
 ### Installation
 
 **System Requirements:**
-Synthea<sup>TM</sup> requires Java 1.8 or above.
+Synthea<sup>TM</sup> requires Java JDK 17 or newer. We strongly recommend using a Long-Term Support (LTS) release of Java, 17 or 25, as issues may occur with more recent non-LTS versions.
 
 To clone the Synthea<sup>TM</sup> repo, then build and run the test suite:
 ```
@@ -36,13 +36,13 @@ cd synthea
 ./gradlew build check test
 ```
 
-### Changing the default properties 
+### Changing the default properties
 
 
 The default properties file values can be found at `src/main/resources/synthea.properties`.
 By default, synthea does not generate CCDA, CPCDA, CSV, or Bulk FHIR (ndjson). You'll need to
 adjust this file to activate these features.  See the [wiki](https://github.com/synthetichealth/synthea/wiki)
-for more details.
+for more details, or use our [guided customizer tool](https://synthetichealth.github.io/spt/#/customizer).
 
 
 
@@ -53,19 +53,44 @@ Generating the population one at a time...
 ```
 
 Command-line arguments may be provided to specify a state, city, population size, or seed for randomization.
-
-Usage is 
 ```
-run_synthea [-s seed] [-p populationSize] [-m moduleFilter] [state [city]]
+run_synthea [-s seed] [-p populationSize] [state [city]]
 ```
-For example:
 
- - `run_synthea Massachusetts`
- - `run_synthea Alaska Juneau`
- - `run_synthea -s 12345`
- - `run_synthea -p 1000`
- - `run_synthea -s 987 Washington Seattle`
- - `run_synthea -s 21 -p 100 Utah "Salt Lake City"`
+Full usage info can be printed by passing the `-h` option.
+```
+$ ./run_synthea -h
+
+> Task :run
+Usage: run_synthea [options] [state [city]]
+Options: [-s seed]
+         [-cs clinicianSeed]
+         [-p populationSize]
+         [-r referenceDate as YYYYMMDD]
+         [-g gender]
+         [-a minAge-maxAge]
+         [-o overflowPopulation]
+         [-c localConfigFilePath]
+         [-d localModulesDirPath]
+         [-i initialPopulationSnapshotPath]
+         [-u updatedPopulationSnapshotPath]
+         [-t updateTimePeriodInDays]
+         [-f fixedRecordPath]
+         [-k keepMatchingPatientsPath]
+         [--config*=value]
+          * any setting from src/main/resources/synthea.properties
+
+Examples:
+run_synthea Massachusetts
+run_synthea Alaska Juneau
+run_synthea -s 12345
+run_synthea -p 1000
+run_synthea -s 987 Washington Seattle
+run_synthea -s 21 -p 100 Utah "Salt Lake City"
+run_synthea -g M -a 60-65
+run_synthea -p 10 --exporter.fhir.export=true
+run_synthea --exporter.baseDirectory="./output_tx/" Texas
+```
 
 Some settings can be changed in `./src/main/resources/synthea.properties`.
 
@@ -86,7 +111,7 @@ Generate a list of concepts (used in the records) or attributes (variables on ea
 
 # License
 
-Copyright 2017-2021 The MITRE Corporation
+Copyright 2017-2025 The MITRE Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

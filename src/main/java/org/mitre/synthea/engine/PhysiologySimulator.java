@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +23,7 @@ import org.apache.commons.math.ode.DerivativeException;
 import org.mitre.synthea.helpers.ChartRenderer;
 import org.mitre.synthea.helpers.ChartRenderer.MultiTableChartConfig;
 import org.mitre.synthea.helpers.ChartRenderer.MultiTableSeriesConfig;
+import org.mitre.synthea.helpers.Utilities;
 import org.sbml.jsbml.Model;
 import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.SBMLException;
@@ -51,11 +50,8 @@ import org.yaml.snakeyaml.constructor.Constructor;
  */
 public class PhysiologySimulator {
 
-  private static final URL MODELS_RESOURCE = ClassLoader.getSystemClassLoader()
-      .getResource("physiology/models");
   private static final Map<String, Class<?>> SOLVER_CLASSES;
   private static Map<String, Model> MODEL_CACHE;
-  private static Path SBML_PATH;
   private static Path OUTPUT_PATH = Paths.get("output", "physiology");
 
   private final Model model;
@@ -75,58 +71,114 @@ public class PhysiologySimulator {
     private List<MultiTableChartConfig> charts;
     private Map<String, Double> inputs;
 
+    /**
+     * Gets the input mappings for the simulation.
+     * @return the input mappings
+     */
     public final Map<String, Double> getInputs() {
       return inputs;
     }
 
+    /**
+     * Sets the input mappings for the simulation.
+     * @param inputs the input mappings to set
+     */
     public final void setInputs(Map<String, Double> inputs) {
       this.inputs = inputs;
     }
 
+    /**
+     * Gets the name of the simulation.
+     * @return the simulation name
+     */
     public String getName() {
       return name;
     }
 
+    /**
+     * Sets the name of the simulation.
+     * @param name the simulation name to set
+     */
     public void setName(String name) {
       this.name = name;
     }
 
+    /**
+     * Gets the model name for the simulation.
+     * @return the model name
+     */
     public String getModel() {
       return model;
     }
 
+    /**
+     * Sets the model name for the simulation.
+     * @param model the model name to set
+     */
     public void setModel(String model) {
       this.model = model;
     }
 
+    /**
+     * Gets the solver name for the simulation.
+     * @return the solver name
+     */
     public String getSolver() {
       return solver;
     }
 
+    /**
+     * Sets the solver name for the simulation.
+     * @param solver the solver name to set
+     */
     public void setSolver(String solver) {
       this.solver = solver;
     }
 
+    /**
+     * Gets the step size for the simulation.
+     * @return the step size
+     */
     public double getStepSize() {
       return stepSize;
     }
 
+    /**
+     * Sets the step size for the simulation.
+     * @param stepSize the step size to set
+     */
     public void setStepSize(double stepSize) {
       this.stepSize = stepSize;
     }
 
+    /**
+     * Gets the duration of the simulation.
+     * @return the simulation duration
+     */
     public double getDuration() {
       return duration;
     }
 
+    /**
+     * Sets the duration of the simulation.
+     * @param duration the simulation duration to set
+     */
     public void setDuration(double duration) {
       this.duration = duration;
     }
 
+    /**
+     * Gets the chart configurations for the simulation.
+     * @return the chart configurations
+     */
     public List<MultiTableChartConfig> getCharts() {
       return charts;
     }
 
+    /**
+     * Sets the chart configurations for the simulation.
+     * @param charts the chart configurations to set
+     */
     public void setCharts(List<MultiTableChartConfig> charts) {
       this.charts = charts;
     }
@@ -151,22 +203,8 @@ public class PhysiologySimulator {
     // Make unmodifiable so it doesn't change after initialization
     SOLVER_CLASSES = Collections.unmodifiableMap(initSolvers);
 
-    try {
-      SBML_PATH = Paths.get(MODELS_RESOURCE.toURI());
-    } catch (URISyntaxException ex) {
-      throw new RuntimeException(ex);
-    }
-
     // Initialize our model cache
     MODEL_CACHE = new HashMap<String, Model>();
-  }
-
-  /**
-   * Sets the path to search for SBML model files.
-   * @param newPath new path to use
-   */
-  public static void setModelsPath(Path newPath) {
-    SBML_PATH = newPath;
   }
 
   /**
@@ -192,12 +230,11 @@ public class PhysiologySimulator {
       model = MODEL_CACHE.get(modelPath);
     } else {
       // Load and instantiate the model from the SBML file
-      Path modelFilepath = Paths.get(SBML_PATH.toString(), modelPath);
       SBMLReader reader = new SBMLReader();
-      File inputFile = new File(modelFilepath.toString());
       SBMLDocument doc;
       try {
-        doc = reader.readSBML(inputFile);
+        String sbmlContent = Utilities.readResourceOrPath("physiology/models/" + modelPath);
+        doc = reader.readSBMLFromString(sbmlContent);
       } catch (IOException | XMLStreamException ex) {
         throw new RuntimeException(ex);
       }

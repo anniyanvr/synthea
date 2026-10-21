@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
 import ca.uhn.fhir.model.dstu2.composite.QuantityDt;
 import ca.uhn.fhir.model.dstu2.composite.SampledDataDt;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
@@ -15,28 +16,31 @@ import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.validation.FhirValidator;
 import ca.uhn.fhir.validation.SingleValidationMessage;
 import ca.uhn.fhir.validation.ValidationResult;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.codec.binary.Base64;
 import org.hl7.fhir.dstu3.model.DiagnosticReport;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.synthea.ParallelTestingService;
 import org.mitre.synthea.TestHelper;
 import org.mitre.synthea.engine.Generator;
 import org.mitre.synthea.engine.Module;
 import org.mitre.synthea.engine.State;
 import org.mitre.synthea.helpers.Config;
 import org.mitre.synthea.helpers.Utilities;
-import org.mitre.synthea.world.agents.Payer;
+import org.mitre.synthea.world.agents.PayerManager;
 import org.mitre.synthea.world.agents.Person;
 import org.mitre.synthea.world.agents.Provider;
+import org.mitre.synthea.world.agents.behaviors.planeligibility.PlanEligibilityFinder;
+import org.mitre.synthea.world.concepts.HealthRecord;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
 import org.mitre.synthea.world.concepts.VitalSign;
 import org.mockito.Mockito;
@@ -45,7 +49,7 @@ import org.mockito.Mockito;
  * Uses HAPI FHIR project to validate FHIR export. http://hapifhir.io/doc_validation.html
  */
 public class FHIRDSTU2ExporterTest {
-  private boolean physStateEnabled;
+  private static boolean physStateEnabled;
 
   /**
    * Temporary folder for any exported files, guaranteed to be deleted at the end of the test.
@@ -56,18 +60,23 @@ public class FHIRDSTU2ExporterTest {
   /**
    * Setup state for exporter test.
    */
-  @Before
-  public void setup() {
+  @BeforeClass
+  public static void setup() {
     // Ensure Physiology state is enabled
     physStateEnabled = State.ENABLE_PHYSIOLOGY_STATE;
     State.ENABLE_PHYSIOLOGY_STATE = true;
+    // Ensure plan and eligibilities are loaded.
+    String testStateDefault = Config.get("test_state.default", "Massachusetts");
+    String eligibilityFile = Config.get("generate.payers.insurance_plans.eligibilities_file");
+    PlanEligibilityFinder.buildPlanEligibilities(testStateDefault, eligibilityFile);
+    PayerManager.loadNoInsurance();
   }
 
   /**
    * Reset state after exporter test.
    */
-  @After
-  public void tearDown() {
+  @AfterClass
+  public static void tearDown() {
     State.ENABLE_PHYSIOLOGY_STATE = physStateEnabled;
   }
 
@@ -105,15 +114,8 @@ public class FHIRDSTU2ExporterTest {
     validator.setValidateAgainstStandardSchema(true);
     validator.setValidateAgainstStandardSchematron(true);
 
-    List<String> validationErrors = new ArrayList<String>();
-
-    int numberOfPeople = 10;
-    Generator generator = new Generator(numberOfPeople);
-    generator.options.overflow = false;
-    for (int i = 0; i < numberOfPeople; i++) {
-      int x = validationErrors.size();
-      TestHelper.exportOff();
-      Person person = generator.generatePerson(i);
+    List<String> errors = ParallelTestingService.runInParallel((person) -> {
+      List<String> validationErrors = new ArrayList<String>();
       Config.set("exporter.fhir_dstu2.export", "true");
       FhirDstu2.TRANSACTION_BUNDLE = person.randBoolean();
       String fhirJson = FhirDstu2.convertToFHIRJson(person, System.currentTimeMillis());
@@ -147,14 +149,14 @@ public class FHIRDSTU2ExporterTest {
         }
       }
 
-      int y = validationErrors.size();
-      if (x != y) {
+      if (! validationErrors.isEmpty()) {
         Exporter.export(person, System.currentTimeMillis());
       }
-    }
+      return validationErrors;
+    });
 
     assertTrue("Validation of exported FHIR bundle failed: "
-        + String.join("|", validationErrors), validationErrors.size() == 0);
+        + String.join("|", errors), errors.size() == 0);
   }
 
   @Test
@@ -181,12 +183,8 @@ public class FHIRDSTU2ExporterTest {
     int age = 35;
     long birthTime = time - Utilities.convertTime("years", age);
     person.attributes.put(Person.BIRTHDATE, birthTime);
-
-    Payer.loadNoInsurance();
-    for (int i = 0; i < age; i++) {
-      long yearTime = time - Utilities.convertTime("years", i);
-      person.coverage.setPayerAtTime(yearTime, Payer.noInsurance);
-    }
+    person.coverage.setPlanToNoInsurance((long) person.attributes.get(Person.BIRTHDATE));
+    person.coverage.setPlanToNoInsurance(time + 1);
 
     Module module = TestHelper.getFixture("observation.json");
 
@@ -245,12 +243,10 @@ public class FHIRDSTU2ExporterTest {
     int age = 35;
     long birthTime = time - Utilities.convertTime("years", age);
     person.attributes.put(Person.BIRTHDATE, birthTime);
-
-    Payer.loadNoInsurance();
-    for (int i = 0; i < age; i++) {
-      long yearTime = time - Utilities.convertTime("years", i);
-      person.coverage.setPayerAtTime(yearTime, Payer.noInsurance);
-    }
+    PayerManager.clear();
+    PayerManager.loadNoInsurance();
+    person.coverage.setPlanToNoInsurance((long) person.attributes.get(Person.BIRTHDATE));
+    person.coverage.setPlanToNoInsurance(time + 1);
 
     Module module = TestHelper.getFixture("observation.json");
 
@@ -291,5 +287,21 @@ public class FHIRDSTU2ExporterTest {
         }
       }
     }
+  }
+
+  @Test
+  public void testMapCodeToCodeableConceptDoesNotMutateCode() throws Exception {
+    // Regression test for #1703. mapCodeToCodeableConcept normalized the source
+    // Code.system in place, so the FHIR exporter permanently rewrote module-level
+    // Code singletons and the CSV export read the wrong SYSTEM value depending on
+    // whether FHIR export ran first. The method is private, so invoke it directly.
+    HealthRecord.Code code = new HealthRecord.Code("SNOMED-CT", "123456", "Test display");
+    Method method = FhirDstu2.class.getDeclaredMethod("mapCodeToCodeableConcept",
+        HealthRecord.Code.class, String.class);
+    method.setAccessible(true);
+    CodeableConceptDt concept = (CodeableConceptDt) method.invoke(null, code, null);
+    assertEquals("SNOMED-CT", code.system);
+    assertEquals("http://snomed.info/sct", concept.getCoding().get(0).getSystem());
+    assertEquals("123456", concept.getCoding().get(0).getCode());
   }
 }

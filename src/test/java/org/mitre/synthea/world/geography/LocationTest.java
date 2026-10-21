@@ -18,9 +18,10 @@ import org.mitre.synthea.helpers.Config;
 import org.mitre.synthea.helpers.SimpleCSV;
 import org.mitre.synthea.helpers.Utilities;
 import org.mitre.synthea.world.agents.Person;
+import org.mitre.synthea.world.concepts.Employment;
 
 public class LocationTest {
-
+  private static String locationDoesNotExist = "The Lost City of Atlantis";
   private static String testState = null;
   private static String testTown = null;
   private static Location location = null;
@@ -59,6 +60,53 @@ public class LocationTest {
   }
 
   @Test
+  public void testLocationWithoutZipCode() {
+    Assert.assertFalse(location.getPopulation(locationDoesNotExist) > 0);
+    List<String> zipcodes = location.getZipCodes(locationDoesNotExist);
+    Assert.assertTrue(zipcodes.size() == 1);
+    Assert.assertTrue(zipcodes.contains("00000"));
+  }
+
+  @Test
+  public void testLocationWithFipsCode() {
+    Assert.assertTrue(location.getPopulation(testTown) > 0);
+    List<String> zipcodes = location.getZipCodes(testTown);
+    Assert.assertFalse(Location.getFipsCodeByZipCode(zipcodes.get(0)).isEmpty());
+  }
+
+  @Test
+  public void testLocationWithoutFipsCode() {
+    List<String> zipcodes = location.getZipCodes(locationDoesNotExist);
+    Assert.assertTrue(zipcodes.size() == 1);
+    Assert.assertTrue(zipcodes.contains("00000"));
+    Assert.assertTrue(Location.getFipsCodeByZipCode(zipcodes.get(0)).isEmpty());
+  }
+
+  @Test
+  public void testStateThatDoesNotExist() {
+    try {
+      new Location("The Lost State of Atlantis", null);
+      Assert.fail("Expected an error for a state missing from the demographics file");
+    } catch (ExceptionInInitializerError e) {
+      Assert.assertEquals(
+          "The state The Lost State of Atlantis was not found in the demographics file.",
+          e.getCause().getMessage());
+    }
+  }
+
+  @Test
+  public void testAssignPointPersonWithLocationThatDoesNotExist() {
+    Person p = new Person(1);
+    String zipcode = location.getZipCode(locationDoesNotExist, p);
+    p.attributes.put(Person.ZIP, zipcode);
+    location.assignPoint(p, locationDoesNotExist);
+    Point2D.Double coord = (Point2D.Double) p.attributes.get(Person.COORDINATE);
+    Assert.assertNotNull(coord);
+    Assert.assertNotNull(coord.x);
+    Assert.assertNotNull(coord.y);
+  }
+
+  @Test
   public void testTimezone() {
     String tz = Location.getTimezoneByState(testState);
     Assert.assertNotNull(tz);
@@ -67,11 +115,11 @@ public class LocationTest {
   @Test
   public void testAllDemographicsHaveLocations() throws Exception {
     String demoFileContents =
-        Utilities.readResource(Config.get("generate.demographics.default_file"));
+        Utilities.readResource(Config.get("generate.demographics.default_file"), true, true);
     List<LinkedHashMap<String, String>> demographics = SimpleCSV.parse(demoFileContents);
 
     String zipFileContents =
-        Utilities.readResource(Config.get("generate.geography.zipcodes.default_file"));
+        Utilities.readResource(Config.get("generate.geography.zipcodes.default_file"), true, true);
     List<LinkedHashMap<String, String>> zips = SimpleCSV.parse(zipFileContents);
 
     // parse all the locations from the zip codes and put them in a a set.
@@ -203,5 +251,23 @@ public class LocationTest {
     location.setSocialDeterminants(person);
     int attributeCountAfter = person.attributes.keySet().size();
     Assert.assertTrue(attributeCountAfter > attributeCountBefore);
+    Assert.assertNotNull(person.attributes.get(Person.EMPLOYMENT_MODEL));
+
+    Person middlesexPerson = new Person(0L);
+    person.attributes.put(Person.COUNTY, "Middlesex County");
+    attributeCountBefore = middlesexPerson.attributes.keySet().size();
+    location.setSocialDeterminants(middlesexPerson);
+    attributeCountAfter = middlesexPerson.attributes.keySet().size();
+    Assert.assertTrue(attributeCountAfter > attributeCountBefore);
+    Assert.assertNotNull(middlesexPerson.attributes.get(Person.EMPLOYMENT_MODEL));
+
+    Person nowherePerson = new Person(0L);
+    person.attributes.put(Person.COUNTY, "Nowhere County");
+    attributeCountBefore = nowherePerson.attributes.keySet().size();
+    location.setSocialDeterminants(nowherePerson);
+    attributeCountAfter = nowherePerson.attributes.keySet().size();
+    Assert.assertTrue(attributeCountAfter > attributeCountBefore);
+    Assert.assertNotNull(nowherePerson.attributes.get(Person.EMPLOYMENT_MODEL));
+
   }
 }

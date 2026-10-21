@@ -9,10 +9,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.mitre.synthea.helpers.Config;
 import org.mitre.synthea.helpers.RandomCollection;
+import org.mitre.synthea.helpers.RandomNumberGenerator;
 import org.mitre.synthea.helpers.SimpleCSV;
 import org.mitre.synthea.helpers.Utilities;
 
@@ -25,30 +26,60 @@ import org.mitre.synthea.helpers.Utilities;
  * probably don't need to be separate classes
  */
 public class Demographics implements Comparable<Demographics>, Serializable {
+  /** Number of people in the location. */
   public long population;
+  /** The unique identifier for the location. */
   public String id;
+  /** The name of the city. */
   public String city;
+  /** The name of the state where the city is located. */
   public String state;
+  /** The name of the county where the city is located. */
   public String county;
+
+  /** A map of age ranges to their frequency in the population. */
   public Map<String, Double> ages;
+  /** Age distribution for the population */
   private RandomCollection<String> ageDistribution;
+
+  /**
+   * Cache of parsed range strings to int[2] arrays (low, high).
+   * Avoids repeated regex splitting and Integer.parseInt on every patient generation.
+   */
+  private static final ConcurrentHashMap<String, int[]> RANGE_CACHE = new ConcurrentHashMap<>();
+
+  /** A map of genders to their frequency in the population. */
   public Map<String, Double> gender;
+  /** Gender distribution of the population */
   private RandomCollection<String> genderDistribution;
+
+  /** A map of races to their frequency in the population. */
   public Map<String, Double> race;
+  /** Race distribution for the population */
   private RandomCollection<String> raceDistribution;
+
+  /** The percentage of the population that is of Hispanic ethnicity. */
   public double ethnicity;
+  /** Ethnicity distribution for the population */
   private RandomCollection<String> ethnicityDistribution;
+
+  /** A map of income ranges to their frequency in the population. */
   public Map<String, Double> income;
+  /** Income distribution for the population */
   private RandomCollection<String> incomeDistribution;
+
+  /** A map of education levels to their frequency in the population. */
   public Map<String, Double> education;
+  /** Eduction distribution for the population */
   private RandomCollection<String> educationDistribution;
 
   /**
    * Pick an age based on the population distribution for the city.
-   * @param random random to use
+   *
+   * @param random the random number generator to use
    * @return the age in years
    */
-  public int pickAge(Random random) {
+  public int pickAge(RandomNumberGenerator random) {
     // lazy-load in case this randomcollection isn't necessary
     if (ageDistribution == null) {
       ageDistribution = buildRandomCollectionFromMap(ages);
@@ -61,22 +92,22 @@ public class Demographics implements Comparable<Demographics>, Serializable {
 
     String pickedRange = ageDistribution.next(random);
 
-    String[] range = pickedRange.split("\\.\\.");
-    // TODO this seems like it would benefit from better caching
-    int low = Integer.parseInt(range[0]);
-    int high = Integer.parseInt(range[1]);
+    int[] bounds = parseRange(pickedRange);
+    int low = bounds[0];
+    int high = bounds[1];
 
     // nextInt is normally exclusive of the top value,
     // so add 1 to make it inclusive
-    return random.nextInt((high - low) + 1) + low;
+    return random.randInt((high - low) + 1) + low;
   }
 
   /**
    * Pick a gender based on the population distribution for the city.
-   * @param random random to use
+   *
+   * @param random the random number generator to use
    * @return the gender
    */
-  public String pickGender(Random random) {
+  public String pickGender(RandomNumberGenerator random) {
 
     // lazy-load in case this randomcollection isn't necessary
     if (genderDistribution == null) {
@@ -92,11 +123,12 @@ public class Demographics implements Comparable<Demographics>, Serializable {
 
   /**
    * Pick a race based on the population distribution for the city.
-   * Uses the US Census definition for race
-   * @param random random to use
+   * Uses the US Census definition for race.
+   *
+   * @param random the random number generator to use
    * @return the race
    */
-  public String pickRace(Random random) {
+  public String pickRace(RandomNumberGenerator random) {
     // lazy-load in case this random collection isn't necessary
     if (raceDistribution == null) {
       raceDistribution = buildRandomCollectionFromMap(race);
@@ -115,10 +147,10 @@ public class Demographics implements Comparable<Demographics>, Serializable {
    * Pick an ethnicity based on the population distribution for the city.
    * Uses the US Census definition for ethnicity.
    *
-   * @param random random to use
+   * @param random the random number generator to use
    * @return "hispanic" or "nonhispanic"
    */
-  public String pickEthnicity(Random random) {
+  public String pickEthnicity(RandomNumberGenerator random) {
     if (ethnicityDistribution == null) {
       ethnicityDistribution = new RandomCollection();
       ethnicityDistribution.add(ethnicity, "hispanic");
@@ -133,10 +165,11 @@ public class Demographics implements Comparable<Demographics>, Serializable {
    * of spoken languages. For non-Hispanic, national distributions by race are used.
    * @param race US Census race
    * @param ethnicity "hispanic" or "nonhispanic"
-   * @param random random to use
+   * @param random the random number generator to use
    * @return the language spoken
    */
-  public String languageFromRaceAndEthnicity(String race, String ethnicity, Random random) {
+  public String languageFromRaceAndEthnicity(String race, String ethnicity,
+      RandomNumberGenerator random) {
     if (ethnicity.equals("hispanic")) {
       RandomCollection<String> hispanicLanguageUsage = new RandomCollection<>();
       // https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?pid=ACS_17_5YR_B16006&prodType=table
@@ -231,11 +264,12 @@ public class Demographics implements Comparable<Demographics>, Serializable {
   }
 
   /**
-   * Pick an ethnicity based on the population distribution for the city.
-   * @param random the random to use
-   * @return the income
+   * Pick an income level based on the population distribution for the city.
+   *
+   * @param random the random number generator to use
+   * @return the income level
    */
-  public int pickIncome(Random random) {
+  public int pickIncome(RandomNumberGenerator random) {
     // lazy-load in case this randomcollection isn't necessary
     if (incomeDistribution == null) {
       Map<String, Double> tempIncome = new HashMap<>(income);
@@ -252,28 +286,26 @@ public class Demographics implements Comparable<Demographics>, Serializable {
      */
 
     String pickedRange = incomeDistribution.next(random);
-
-    String[] range = pickedRange.split("\\.\\.");
-    // TODO this seems like it would benefit from better caching
-    int low = Integer.parseInt(range[0]) * 1000;
-    int high = Integer.parseInt(range[1]) * 1000;
+    int[] bounds = parseRange(pickedRange);
+    int low = bounds[0] * 1000;
+    int high = bounds[1] * 1000;
 
     // nextInt is normally exclusive of the top value,
     // so add 1 to make it inclusive
-    return random.nextInt((high - low) + 1) + low;
+    return random.randInt((high - low) + 1) + low;
   }
 
   /**
    * Simple linear formula just maps federal poverty level to 0.0 and 75,000 to 1.0.
    * The 75,000 figure was chosen based on
-   * https://www.princeton.edu/~deaton/downloads/
-   * deaton_kahneman_high_income_improves_evaluation_August2010.pdf.
+   * https://www.princeton.edu/~deaton/downloads/deaton_kahneman_high_income_improves_evaluation_August2010.pdf
+   * @param income Annual income.
+   * @return a value between 0.0 and 1.0 representing the income level.
    */
   public double incomeLevel(int income) {
-    double poverty = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.income.poverty", "11000"));
-    double high = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.income.high", "75000"));
+    double poverty =
+            Config.getAsDouble("generate.demographics.socioeconomic.income.poverty", 11000);
+    double high = Config.getAsDouble("generate.demographics.socioeconomic.income.high", 75000);
 
     if (income >= high) {
       return 1.0;
@@ -290,15 +322,17 @@ public class Demographics implements Comparable<Demographics>, Serializable {
    * @return poverty ratio.
    */
   public double povertyRatio(int income) {
-    double poverty = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.income.poverty", "11000"));
+    double poverty =
+            Config.getAsDouble("generate.demographics.socioeconomic.income.poverty", 11000);
     return ((double) income) / poverty;
   }
 
   /**
    * Return a random education level based on statistics.
+   * @param random the random number generator to use
+   * @return the randomly selected education level
    */
-  public String pickEducation(Random random) {
+  public String pickEducation(RandomNumberGenerator random) {
     // lazy-load in case this randomcollection isn't necessary
     if (educationDistribution == null) {
       educationDistribution = buildRandomCollectionFromMap(education);
@@ -309,53 +343,58 @@ public class Demographics implements Comparable<Demographics>, Serializable {
 
   /**
    * Return a random number between the configured bounds for a specified education level.
+   * @param level the education level, one of "less_than_hs", "hs_degree", "some_college",
+   *        "bs_degree"
+   * @param random the random number generator to use
+   * @return a random number between the configured bounds representing the education level
    */
-  public double educationLevel(String level, Random random) {
-    double lessThanHsMin = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.less_than_hs.min", "0.0"));
-    double lessThanHsMax = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.less_than_hs.max", "0.5"));
-    double hsDegreeMin = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.hs_degree.min", "0.1"));
-    double hsDegreeMax = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.hs_degree.max", "0.75"));
-    double someCollegeMin = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.some_college.min", "0.3"));
-    double someCollegeMax = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.some_college.max", "0.85"));
-    double bsDegreeMin = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.bs_degree.min", "0.5"));
-    double bsDegreeMax = Double.parseDouble(
-        Config.get("generate.demographics.socioeconomic.education.bs_degree.max", "1.0"));
+  public double educationLevel(String level, RandomNumberGenerator random) {
+    double lessThanHsMin = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.less_than_hs.min", 0.0);
+    double lessThanHsMax = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.less_than_hs.max", 0.5);
+    double hsDegreeMin = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.hs_degree.min", 0.1);
+    double hsDegreeMax = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.hs_degree.max", 0.75);
+    double someCollegeMin = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.some_college.min", 0.3);
+    double someCollegeMax = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.some_college.max", 0.85);
+    double bsDegreeMin = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.bs_degree.min", 0.5);
+    double bsDegreeMax = Config.getAsDouble(
+            "generate.demographics.socioeconomic.education.bs_degree.max", 1.0);
 
     switch (level) {
       case "less_than_hs":
-        return rand(random, lessThanHsMin, lessThanHsMax);
+        return random.rand(lessThanHsMin, lessThanHsMax);
       case "hs_degree":
-        return rand(random, hsDegreeMin, hsDegreeMax);
+        return random.rand(hsDegreeMin, hsDegreeMax);
       case "some_college":
-        return rand(random, someCollegeMin, someCollegeMax);
+        return random.rand(someCollegeMin, someCollegeMax);
       case "bs_degree":
-        return rand(random, bsDegreeMin, bsDegreeMax);
+        return random.rand(bsDegreeMin, bsDegreeMax);
       default:
         return 0.0;
     }
   }
 
-  private static double rand(Random r, double low, double high) {
-    return (low + ((high - low) * r.nextDouble()));
-  }
 
   /**
    * Calculate the socio-economic score for the supplied parameters.
+   *
+   * @param income the income level
+   * @param education the education level
+   * @param occupation the occupation level
+   * @return the socio-economic score
    */
   public double socioeconomicScore(double income, double education, double occupation) {
-    double incomeWeight = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.weights.income"));
-    double educationWeight = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.weights.education"));
-    double occupationWeight = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.weights.occupation"));
+    double incomeWeight = Config.getAsDouble("generate.demographics.socioeconomic.weights.income");
+    double educationWeight =
+            Config.getAsDouble("generate.demographics.socioeconomic.weights.education");
+    double occupationWeight =
+            Config.getAsDouble("generate.demographics.socioeconomic.weights.occupation");
 
     return (income * incomeWeight) + (education * educationWeight)
         + (occupation * occupationWeight);
@@ -364,12 +403,13 @@ public class Demographics implements Comparable<Demographics>, Serializable {
   /**
    * Return a high/middle/low socio economic category based on the supplied score and the
    * configured stratifier values.
+   *
+   * @param score the socio-economic score
+   * @return the socio-economic category, one of "High", "Middle", or "Low"
    */
   public String socioeconomicCategory(double score) {
-    double highScore = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.score.high"));
-    double middleScore = Double
-        .parseDouble(Config.get("generate.demographics.socioeconomic.score.middle"));
+    double highScore = Config.getAsDouble("generate.demographics.socioeconomic.score.high");
+    double middleScore = Config.getAsDouble("generate.demographics.socioeconomic.score.middle");
 
     if (score >= highScore) {
       return "High";
@@ -392,7 +432,7 @@ public class Demographics implements Comparable<Demographics>, Serializable {
   public static Table<String, String, Demographics> load(String state)
       throws IOException {
     String filename = Config.get("generate.demographics.default_file");
-    String csv = Utilities.readResource(filename);
+    String csv = Utilities.readResource(filename, true, true);
 
     List<? extends Map<String,String>> demographicsCsv = SimpleCSV.parse(csv);
 
@@ -437,8 +477,8 @@ public class Demographics implements Comparable<Demographics>, Serializable {
   /**
    * Map a single line of the demographics CSV file into a Demographics object.
    *
-   * @param line Line representing one city, parsed via SimpleCSV
-   * @return the Demographics for that city
+   * @param line a line representing one city, parsed via SimpleCSV
+   * @return the Demographics object for that city
    */
   private static Demographics csvLineToDemographics(Map<String,String> line) {
     Demographics d = new Demographics();
@@ -458,11 +498,14 @@ public class Demographics implements Comparable<Demographics>, Serializable {
       String csvHeader = Integer.toString(i++);
       double percentage = Double.parseDouble(line.get(csvHeader));
       d.ages.put(ageGroup, percentage);
+
     }
+    nonZeroDefaults(d.ages);
 
     d.gender = new HashMap<String, Double>();
     d.gender.put("male", Double.parseDouble(line.get("TOT_MALE")));
     d.gender.put("female", Double.parseDouble(line.get("TOT_FEMALE")));
+    nonZeroDefaults(d.gender);
 
     double percentageTotal = 0;
     d.race = new HashMap<String, Double>();
@@ -484,6 +527,7 @@ public class Demographics implements Comparable<Demographics>, Serializable {
       d.race.put("hawaiian", 0.0);
       d.race.put("other", 0.0);
     }
+    nonZeroDefaults(d.race);
 
     d.income = new HashMap<String, Double>();
     for (String income : CSV_INCOMES) {
@@ -495,6 +539,7 @@ public class Demographics implements Comparable<Demographics>, Serializable {
         d.income.put(income, percentage);
       }
     }
+    nonZeroDefaults(d.income);
 
     d.education = new HashMap<String, Double>();
     for (String education : CSV_EDUCATIONS) {
@@ -506,6 +551,7 @@ public class Demographics implements Comparable<Demographics>, Serializable {
         d.education.put(education.toLowerCase(), percentage);
       }
     }
+    nonZeroDefaults(d.education);
 
     d.ethnicity = Double.parseDouble(line.get(CSV_ETHNICITY));
 
@@ -513,7 +559,48 @@ public class Demographics implements Comparable<Demographics>, Serializable {
   }
 
   /**
+   * A distribution with all zero values will cause runtime issues.
+   * If the values are all zero, an equally weighted uniform distribution will be set.
+   *
+   * @param map the map to check
+   */
+  private static void nonZeroDefaults(Map<String, Double> map) {
+    // Any null or nan values should be zero
+    map.replaceAll((key, value) -> (value == null || value.isNaN()) ? 0.0 : value);
+    // Now check if all values are zero
+    boolean allZero = true;
+    for (Double value : map.values()) {
+      if (value != 0)  {
+        allZero = false;
+        break;
+      }
+    }
+    // If all values were zero, apply a uniform distribution.
+    if (allZero) {
+      Double value = 1.0 / map.size();
+      map.replaceAll((key, oldValue) -> value);
+    }
+  }
+
+  /**
+   * Parse a range string like "0..4" or "50..75" into an int array [low, high].
+   * Results are cached to avoid repeated regex splitting and parsing on every call.
+   *
+   * @param range the range string in the format "low..high"
+   * @return an int array where [0] is the low bound and [1] is the high bound
+   */
+  private static int[] parseRange(String range) {
+    return RANGE_CACHE.computeIfAbsent(range, key -> {
+      String[] parts = key.split("\\.\\.");
+      return new int[] { Integer.parseInt(parts[0]), Integer.parseInt(parts[1]) };
+    });
+  }
+
+  /**
    * Helper function to convert a map of frequencies into a RandomCollection.
+   *
+   * @param map the map of frequencies
+   * @return a RandomCollection based on the map
    */
   private static RandomCollection<String> buildRandomCollectionFromMap(Map<String, Double> map) {
     RandomCollection<String> distribution = new RandomCollection<>();

@@ -6,7 +6,7 @@
   "states": {
     "Initial": {
       "type": "Initial",
-      "direct_transition": "Anemia"
+      "direct_transition": "End Any Active Encounter Just In Case"
     },
     "Anemia": {
       "type": "ConditionOnset",
@@ -14,7 +14,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 271737000,
+          "code": "271737000",
           "display": "Anemia (disorder)"
         }
       ],
@@ -28,7 +28,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 415300000,
+          "code": "415300000",
           "display": "Review of systems (procedure)"
         }
       ],
@@ -47,7 +47,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 162676008,
+          "code": "162676008",
           "display": "Brief general examination (procedure)"
         }
       ],
@@ -63,7 +63,7 @@
       ],
       "conditional_transition": [
         {
-          "transition": "End_Initial_Encounter",
+          "transition": "Delay",
           "condition": {
             "condition_type": "And",
             "conditions": [
@@ -73,7 +73,7 @@
                   {
                     "system": "LOINC",
                     "code": "20570-8",
-                    "display": "Hematocrit"
+                    "display": "Hematocrit [Volume Fraction] of Blood by calculation"
                   }
                 ],
                 "operator": "<=",
@@ -87,7 +87,7 @@
           }
         },
         {
-          "transition": "End_Initial_Encounter",
+          "transition": "Delay",
           "condition": {
             "condition_type": "And",
             "conditions": [
@@ -101,7 +101,7 @@
                   {
                     "system": "LOINC",
                     "code": "20570-8",
-                    "display": "Hematocrit"
+                    "display": "Hematocrit [Volume Fraction] of Blood by calculation"
                   }
                 ],
                 "operator": "<=",
@@ -111,13 +111,9 @@
           }
         },
         {
-          "transition": "Administer_Medications_2"
+          "transition": "Administer_Medications"
         }
       ]
-    },
-    "End_Initial_Encounter": {
-      "type": "EncounterEnd",
-      "direct_transition": "Delay"
     },
     "Male": {
       "type": "Simple",
@@ -172,7 +168,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 180207008,
+          "code": "180207008",
           "display": "Intravenous blood transfusion of packed cells (procedure)"
         }
       ],
@@ -181,15 +177,15 @@
         "high": 60,
         "unit": "minutes"
       },
-      "direct_transition": "End Transfusion_Encounter"
+      "direct_transition": "End Encounter After Transfusion"
     },
     "Peripheral_Blood_Smear": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 14768001,
-          "display": "Peripheral blood smear interpretation"
+          "code": "14768001",
+          "display": "Peripheral blood smear interpretation (procedure)"
         }
       ],
       "duration": {
@@ -204,8 +200,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 430193006,
-          "display": "Medication Reconciliation (procedure)"
+          "code": "430193006",
+          "display": "Medication reconciliation (procedure)"
         }
       ],
       "duration": {
@@ -227,7 +223,7 @@
           "distribution": 0.1
         },
         {
-          "transition": "End_Consult_Referral to_Experts_Encounter",
+          "transition": "End Encounter After Medication Rx",
           "distribution": 0.8
         }
       ]
@@ -247,7 +243,7 @@
           "distribution": 0.1
         },
         {
-          "transition": "End_Consult_Referral to_Experts_Encounter",
+          "transition": "End Encounter After Medication Rx",
           "distribution": 0.9
         }
       ]
@@ -258,23 +254,10 @@
         {
           "system": "RxNorm",
           "code": 2001499,
-          "display": "Vitamin B 12 5 MG/ML Injectable Solution"
+          "display": "Vitamin B12 5 MG/ML Injectable Solution"
         }
       ],
-      "direct_transition": "End_Consult_Referral to_Experts_Encounter"
-    },
-    "Transfusion_Encounter": {
-      "type": "Encounter",
-      "encounter_class": "inpatient",
-      "reason": "anemia",
-      "codes": [
-        {
-          "system": "SNOMED-CT",
-          "code": 185347001,
-          "display": "Encounter for problem (procedure)"
-        }
-      ],
-      "direct_transition": "Transfusion"
+      "direct_transition": "End Encounter After Medication Rx"
     },
     "Anemia_Encounter": {
       "type": "Encounter",
@@ -282,8 +265,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 185347001,
-          "display": "Encounter for problem"
+          "code": "185347001",
+          "display": "Encounter for problem (procedure)"
         }
       ],
       "conditional_transition": [
@@ -304,58 +287,6 @@
       ],
       "reason": "anemia"
     },
-    "Administer_Medications_2": {
-      "type": "Simple",
-      "distributed_transition": [
-        {
-          "transition": "Iron_Supplement_2",
-          "distribution": 0.1
-        },
-        {
-          "transition": "Vitamin_B12_Booster",
-          "distribution": 0.1
-        },
-        {
-          "transition": "End_Anemia_Encounter",
-          "distribution": 0.8
-        }
-      ]
-    },
-    "Iron_Supplement_2": {
-      "type": "MedicationOrder",
-      "codes": [
-        {
-          "system": "RxNorm",
-          "code": 310325,
-          "display": "ferrous sulfate 325 MG Oral Tablet"
-        }
-      ],
-      "distributed_transition": [
-        {
-          "transition": "Vitamin_B12_Booster",
-          "distribution": 0.1
-        },
-        {
-          "transition": "End_Anemia_Encounter",
-          "distribution": 0.9
-        }
-      ]
-    },
-    "Vitamin_B12_Booster": {
-      "type": "MedicationOrder",
-      "codes": [
-        {
-          "system": "RxNorm",
-          "code": 2001499,
-          "display": "Vitamin B 12 5 MG/ML Injectable Solution"
-        }
-      ],
-      "direct_transition": "End_Anemia_Encounter"
-    },
-    "End_Anemia_Encounter": {
-      "type": "EncounterEnd",
-      "direct_transition": "Terminal"
-    },
     "CBC_Panel_F_Routine": {
       "type": "DiagnosticReport",
       "number_of_observations": 11,
@@ -363,7 +294,7 @@
         {
           "system": "LOINC",
           "code": "58410-2",
-          "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+          "display": "CBC panel - Blood by Automated count"
         }
       ],
       "direct_transition": "Peripheral_Blood_Smear",
@@ -390,7 +321,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit [Volume Fraction] of Blood"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -405,7 +336,7 @@
             {
               "system": "LOINC",
               "code": "6690-2",
-              "display": "WBC Auto (Bld) [#/Vol]"
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -420,7 +351,7 @@
             {
               "system": "LOINC",
               "code": "789-8",
-              "display": "RBC Auto (Bld) [#/Vol]"
+              "display": "Erythrocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -435,7 +366,7 @@
             {
               "system": "LOINC",
               "code": "787-2",
-              "display": "MCV [Entitic volume] by Automated count"
+              "display": "MCV [Entitic mean volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -465,7 +396,7 @@
             {
               "system": "LOINC",
               "code": "786-4",
-              "display": "MCHC [Mass/volume] by Automated count"
+              "display": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -479,8 +410,8 @@
           "codes": [
             {
               "system": "LOINC",
-              "code": "21000-5",
-              "display": "RDW - Erythrocyte distribution width Auto (RBC) [Entitic vol]"
+              "code": "788-0",
+              "display": "Erythrocyte [DistWidth] in Blood by Automated count"
             }
           ],
           "range": {
@@ -514,8 +445,8 @@
             }
           ],
           "range": {
-            "low": 150,
-            "high": 520
+            "low": 9,
+            "high": 17
           }
         },
         {
@@ -525,7 +456,7 @@
             {
               "system": "LOINC",
               "code": "32623-1",
-              "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+              "display": "Platelet [Entitic mean volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -542,7 +473,7 @@
         {
           "system": "LOINC",
           "code": "58410-2",
-          "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+          "display": "CBC panel - Blood by Automated count"
         }
       ],
       "observations": [
@@ -568,7 +499,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit [Volume Fraction] of Blood"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -583,7 +514,7 @@
             {
               "system": "LOINC",
               "code": "6690-2",
-              "display": "WBC Auto (Bld) [#/Vol]"
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -598,7 +529,7 @@
             {
               "system": "LOINC",
               "code": "789-8",
-              "display": "RBC Auto (Bld) [#/Vol]"
+              "display": "Erythrocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -613,7 +544,7 @@
             {
               "system": "LOINC",
               "code": "787-2",
-              "display": "MCV [Entitic volume] by Automated count"
+              "display": "MCV [Entitic mean volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -643,7 +574,7 @@
             {
               "system": "LOINC",
               "code": "786-4",
-              "display": "MCHC [Mass/volume] by Automated count"
+              "display": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -657,8 +588,8 @@
           "codes": [
             {
               "system": "LOINC",
-              "code": "21000-5",
-              "display": "RDW - Erythrocyte distribution width Auto (RBC) [Entitic vol]"
+              "code": "788-0",
+              "display": "Erythrocyte [DistWidth] in Blood by Automated count"
             }
           ],
           "range": {
@@ -692,8 +623,8 @@
             }
           ],
           "range": {
-            "low": 150,
-            "high": 520
+            "low": 9,
+            "high": 17
           }
         },
         {
@@ -703,7 +634,7 @@
             {
               "system": "LOINC",
               "code": "32623-1",
-              "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+              "display": "Platelet [Entitic mean volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -721,7 +652,7 @@
         {
           "system": "LOINC",
           "code": "58410-2",
-          "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+          "display": "CBC panel - Blood by Automated count"
         }
       ],
       "observations": [
@@ -747,7 +678,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit [Volume Fraction] of Blood"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -762,7 +693,7 @@
             {
               "system": "LOINC",
               "code": "6690-2",
-              "display": "WBC Auto (Bld) [#/Vol]"
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -777,7 +708,7 @@
             {
               "system": "LOINC",
               "code": "789-8",
-              "display": "RBC Auto (Bld) [#/Vol]"
+              "display": "Erythrocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -792,7 +723,7 @@
             {
               "system": "LOINC",
               "code": "787-2",
-              "display": "MCV [Entitic volume] by Automated count"
+              "display": "MCV [Entitic mean volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -822,7 +753,7 @@
             {
               "system": "LOINC",
               "code": "786-4",
-              "display": "MCHC [Mass/volume] by Automated count"
+              "display": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -836,8 +767,8 @@
           "codes": [
             {
               "system": "LOINC",
-              "code": "21000-5",
-              "display": "RDW - Erythrocyte distribution width Auto (RBC) [Entitic vol]"
+              "code": "788-0",
+              "display": "Erythrocyte [DistWidth] in Blood by Automated count"
             }
           ],
           "range": {
@@ -871,8 +802,8 @@
             }
           ],
           "range": {
-            "low": 150,
-            "high": 520
+            "low": 9,
+            "high": 17
           }
         },
         {
@@ -882,7 +813,7 @@
             {
               "system": "LOINC",
               "code": "32623-1",
-              "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+              "display": "Platelet [Entitic mean volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -900,7 +831,7 @@
         {
           "system": "LOINC",
           "code": "58410-2",
-          "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+          "display": "CBC panel - Blood by Automated count"
         }
       ],
       "direct_transition": "Peripheral_Blood_Smear",
@@ -927,7 +858,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit [Volume Fraction] of Blood"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -942,7 +873,7 @@
             {
               "system": "LOINC",
               "code": "6690-2",
-              "display": "WBC Auto (Bld) [#/Vol]"
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -957,7 +888,7 @@
             {
               "system": "LOINC",
               "code": "789-8",
-              "display": "RBC Auto (Bld) [#/Vol]"
+              "display": "Erythrocytes [#/volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -972,7 +903,7 @@
             {
               "system": "LOINC",
               "code": "787-2",
-              "display": "MCV [Entitic volume] by Automated count"
+              "display": "MCV [Entitic mean volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -1002,7 +933,7 @@
             {
               "system": "LOINC",
               "code": "786-4",
-              "display": "MCHC [Mass/volume] by Automated count"
+              "display": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -1016,8 +947,8 @@
           "codes": [
             {
               "system": "LOINC",
-              "code": "21000-5",
-              "display": "RDW - Erythrocyte distribution width Auto (RBC) [Entitic vol]"
+              "code": "788-0",
+              "display": "Erythrocyte [DistWidth] in Blood by Automated count"
             }
           ],
           "range": {
@@ -1051,8 +982,8 @@
             }
           ],
           "range": {
-            "low": 150,
-            "high": 520
+            "low": 9,
+            "high": 17
           }
         },
         {
@@ -1062,7 +993,7 @@
             {
               "system": "LOINC",
               "code": "32623-1",
-              "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+              "display": "Platelet [Entitic mean volume] in Blood by Automated count"
             }
           ],
           "range": {
@@ -1072,10 +1003,6 @@
         }
       ]
     },
-    "End Transfusion_Encounter": {
-      "type": "EncounterEnd",
-      "direct_transition": "Delay_One_Day"
-    },
     "Consult_Referral_to_Experts_Encounter": {
       "type": "Encounter",
       "encounter_class": "ambulatory",
@@ -1083,8 +1010,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 185347001,
-          "display": "Encounter for problem"
+          "code": "185347001",
+          "display": "Encounter for problem (procedure)"
         }
       ],
       "conditional_transition": [
@@ -1104,10 +1031,6 @@
         }
       ]
     },
-    "End_Consult_Referral to_Experts_Encounter": {
-      "type": "EncounterEnd",
-      "direct_transition": "Terminal"
-    },
     "Collect_Social_and_Nutrition_History": {
       "type": "Simple",
       "remarks": [
@@ -1121,7 +1044,7 @@
         "quantity": 1,
         "unit": "hours"
       },
-      "direct_transition": "Transfusion_Encounter"
+      "direct_transition": "Transfusion"
     },
     "Blood_Panel_M_Routine": {
       "type": "DiagnosticReport",
@@ -1155,7 +1078,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit [Volume Fraction] of Blood"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -1198,7 +1121,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit [Volume Fraction] of Blood"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -1216,6 +1139,18 @@
         "unit": "days"
       },
       "direct_transition": "Consult_Referral_to_Experts_Encounter"
+    },
+    "End Any Active Encounter Just In Case": {
+      "type": "EncounterEnd",
+      "direct_transition": "Anemia"
+    },
+    "End Encounter After Transfusion": {
+      "type": "EncounterEnd",
+      "direct_transition": "Delay_One_Day"
+    },
+    "End Encounter After Medication Rx": {
+      "type": "EncounterEnd",
+      "direct_transition": "Terminal"
     }
   },
   "gmf_version": 1

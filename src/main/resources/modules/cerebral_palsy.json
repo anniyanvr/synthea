@@ -13,8 +13,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 234817001,
-          "display": "Insertion of oral appliance for the handicapped (procedure)"
+          "code": "1259900009",
+          "display": "Fitting of intraoral appliance (procedure)"
         }
       ],
       "duration": {
@@ -47,7 +47,7 @@
         {
           "system": "RxNorm",
           "code": 351875,
-          "display": "72 HR Scopolamine 0.0139 MG/HR Transdermal System [Transdermal Scop]"
+          "display": "72 HR scopolamine 0.0139 MG/HR Transdermal System [Transderm Scop]"
         }
       ],
       "direct_transition": "End_Cerebral_Palsy_Encounter1",
@@ -132,7 +132,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 128188000,
+          "code": "128188000",
           "display": "Cerebral palsy (disorder)"
         }
       ],
@@ -145,7 +145,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 108219001,
+          "code": "108219001",
           "display": "Physician visit with evaluation AND/OR management service (procedure)"
         }
       ],
@@ -157,8 +157,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 311834001,
-          "display": "Fiberoptic Endoscopic Evaluation of Swallowing"
+          "code": "311834001",
+          "display": "Fiberoptic endoscopic evaluation of swallowing (procedure)"
         }
       ],
       "duration": {
@@ -175,7 +175,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 288959006,
+          "code": "288959006",
           "display": "Unable to swallow saliva (finding)"
         }
       ],
@@ -186,8 +186,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 182836005,
-          "display": "Review of Medication (procedure)"
+          "code": "182836005",
+          "display": "Review of medication (procedure)"
         }
       ],
       "duration": {
@@ -203,7 +203,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 717778001,
+          "code": "717778001",
           "display": "Mouth care (regime/therapy)"
         }
       ],
@@ -220,7 +220,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 229069003,
+          "code": "229069003",
           "display": "Posture training (procedure)"
         }
       ],
@@ -360,7 +360,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 166001,
+          "code": "166001",
           "display": "Behavioral therapy (regime/therapy)"
         }
       ],
@@ -394,8 +394,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 311707005,
-          "display": "Oromotor Exercises"
+          "code": "311707005",
+          "display": "Oral motor exercises (regime/therapy)"
         }
       ],
       "duration": {
@@ -411,8 +411,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 312421008,
-          "display": "Radionuclide Imaging"
+          "code": "312421008",
+          "display": "Radionuclide imaging - action (qualifier value)"
         }
       ],
       "duration": {
@@ -429,7 +429,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 62718007,
+          "code": "62718007",
           "display": "Dribbling from mouth (finding)"
         }
       ],
@@ -440,7 +440,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 182836005,
+          "code": "182836005",
           "display": "Review of medication (procedure)"
         }
       ],
@@ -457,7 +457,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 717778001,
+          "code": "717778001",
           "display": "Mouth care (regime/therapy)"
         }
       ],
@@ -474,7 +474,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 229069003,
+          "code": "229069003",
           "display": "Posture training (procedure)"
         }
       ],
@@ -538,7 +538,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 173521004,
+          "code": "173521004",
           "display": "Transposition of submandibular duct (procedure)"
         }
       ],
@@ -555,7 +555,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 7227006,
+          "code": "47227006",
           "display": "Excision of submandibular gland (procedure)"
         }
       ],
@@ -572,7 +572,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 302351005,
+          "code": "302351005",
           "display": "Ligation of salivary duct (procedure)"
         }
       ],
@@ -599,11 +599,10 @@
     },
     "Cerebral_Palsy_Sialorrhea": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 53827007,
+          "code": "53827007",
           "display": "Excessive salivation (disorder)"
         }
       ],
@@ -651,10 +650,11 @@
     "Followup_Cerebral_Palsy_Encounter": {
       "type": "Encounter",
       "encounter_class": "ambulatory",
+      "telemedicine_possibility": "possible",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 390906007,
+          "code": "390906007",
           "display": "Follow-up encounter (procedure)"
         }
       ],
@@ -705,7 +705,8 @@
             "name": "Monitoring"
           }
         }
-      ]
+      ],
+      "reason": "Condition_Onset_Cerebral Palsy"
     },
     "Delay_Surgical Encounter": {
       "type": "Delay",
@@ -777,7 +778,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 267064002,
+          "code": "267064002",
           "display": "Retention of urine (disorder)"
         }
       ],
@@ -790,7 +791,7 @@
               {
                 "system": "RxNorm",
                 "code": 351875,
-                "display": "72 HR scopolamine 0.0139 MG/HR Transdermal System"
+                "display": "72 HR scopolamine 0.0139 MG/HR Transdermal System [Transderm Scop]"
               }
             ]
           }
@@ -804,7 +805,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 14760008,
+          "code": "14760008",
           "display": "Constipation (finding)"
         }
       ],
@@ -842,8 +843,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 389082000,
-          "display": "Constipation Care (regime/therapy)"
+          "code": "389082000",
+          "display": "Constipation care (regime/therapy)"
         }
       ],
       "assign_to_attribute": "Care_Plan_Constipation",
@@ -885,7 +886,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 386490009,
+          "code": "386490009",
           "display": "Urinary retention care (regime/therapy)"
         }
       ],
@@ -928,7 +929,7 @@
       "codes": [
         {
           "system": "RxNorm",
-          "code": 143975,
+          "code": 1437975,
           "display": "glycopyrrolate 1.5 MG Oral Tablet [Glycate]"
         }
       ],
@@ -955,11 +956,11 @@
     },
     "Surgical_Encounter1": {
       "type": "Encounter",
-      "encounter_class": "inpatient",
+      "encounter_class": "ambulatory",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 40274000,
+          "code": "40274000",
           "display": "General outpatient clinic admission (procedure)"
         }
       ],
@@ -986,7 +987,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 183646003,
+          "code": "183646003",
           "display": "Postoperative visit (finding)"
         }
       ],
@@ -1028,12 +1029,11 @@
     },
     "Cerebral_Palsy_Dystonia": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 15802004,
+          "code": "15802004",
           "display": "Dystonia (disorder)"
         }
       ],
@@ -1044,12 +1044,11 @@
     },
     "Cerebral_Palsy_Pain": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 22253000,
+          "code": "22253000",
           "display": "Pain (finding)"
         }
       ],
@@ -1060,12 +1059,11 @@
     },
     "Cerebral_Palsy_Central_Hypotonia": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 398152000,
+          "code": "398152000",
           "display": "Poor muscle tone (finding)"
         }
       ],
@@ -1076,12 +1074,11 @@
     },
     "Cerebral_Palsy_Spasticity": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 221360009,
+          "code": "221360009",
           "display": "Spasticity (finding)"
         }
       ],
@@ -1092,12 +1089,11 @@
     },
     "Cerebral_Palsy_Osteoporosis": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 64859006,
+          "code": "64859006",
           "display": "Osteoporosis (disorder)"
         }
       ],
@@ -1108,12 +1104,11 @@
     },
     "Cerebral_Palsy_Epilepsy": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 84757009,
+          "code": "84757009",
           "display": "Epilepsy (disorder)"
         }
       ],
@@ -1124,12 +1119,11 @@
     },
     "Cerebral_Palsy_Intellectual_Disability": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 110359009,
+          "code": "110359009",
           "display": "Intellectual disability (disorder)"
         }
       ],
@@ -1140,12 +1134,11 @@
     },
     "Cerebral_Palsy_GERD": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 235595009,
+          "code": "235595009",
           "display": "Gastroesophageal reflux disease (disorder)"
         }
       ],
@@ -1162,8 +1155,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 371883000,
-          "display": "Outpatient Procedure (procedure)"
+          "code": "371883000",
+          "display": "Outpatient procedure (procedure)"
         }
       ],
       "direct_transition": "Surgical_Interventions"
@@ -1181,7 +1174,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 404909007,
+          "code": "404909007",
           "display": "Injection of botulinum toxin (procedure)"
         }
       ],
@@ -1198,7 +1191,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 404909007,
+          "code": "404909007",
           "display": "Injection of botulinum toxin (procedure)"
         }
       ],
@@ -1219,7 +1212,7 @@
         {
           "system": "RxNorm",
           "code": 1789958,
-          "display": "Dysport botulinum toxin A 300 UNT Injection"
+          "display": "abobotulinumtoxinA 300 UNT Injection [Dysport]"
         }
       ],
       "direct_transition": "Botulinum_Toxin_A_Injection",
@@ -1254,7 +1247,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 62718007,
+          "code": "62718007",
           "display": "Dribbling from mouth (finding)"
         }
       ],
@@ -1266,7 +1259,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 288959006,
+          "code": "288959006",
           "display": "Unable to swallow saliva (finding)"
         }
       ],
@@ -1290,7 +1283,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 241149003,
+          "code": "241149003",
           "display": "Videofluoroscopy swallow (procedure)"
         }
       ],
@@ -1307,7 +1300,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 182777000,
+          "code": "182777000",
           "display": "Monitoring of patient (regime/therapy)"
         }
       ],
@@ -1316,16 +1309,15 @@
         "high": 30,
         "unit": "minutes"
       },
-      "direct_transition": "Living_with_CP"
+      "direct_transition": "End_Cerebral_Palsy_Encounter1"
     },
     "Cerebral_Palsy_Pneumonia": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 233604007,
+          "code": "233604007",
           "display": "Pneumonia (disorder)"
         }
       ],
@@ -1340,7 +1332,7 @@
         {
           "system": "RxNorm",
           "code": 1190766,
-          "display": "atropine sulfate 0.31 MG/ML Ophthalmic Solution (used Sublingual)"
+          "display": "atropine sulfate 0.31 MG/ML Ophthalmic Solution"
         }
       ],
       "direct_transition": "End_Cerebral_Palsy_Encounter1",
@@ -1354,7 +1346,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 182777000,
+          "code": "182777000",
           "display": "Monitoring of patient (regime/therapy)"
         }
       ],
@@ -1495,12 +1487,11 @@
     },
     "Cerebral_Palsy_Hip_Dislocation": {
       "type": "ConditionOnset",
-      "assign_to_attribute": "",
       "target_encounter": "Cerebral_Palsy_Encounter1",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 157265008,
+          "code": "157265008",
           "display": "Dislocation of hip joint (disorder)"
         }
       ],
@@ -1530,13 +1521,17 @@
           "distribution": 0.4
         },
         {
-          "transition": "Terminal",
+          "transition": "End Encounter and Exit",
           "distribution": 0.6000000000000001
         }
       ]
     },
     "Terminal": {
       "type": "Terminal"
+    },
+    "End Encounter and Exit": {
+      "type": "EncounterEnd",
+      "direct_transition": "Terminal"
     }
   },
   "remarks": [
@@ -1551,5 +1546,6 @@
     "Reference: AACPDM Clinical Care Pathway for Sialorrhea in Cerebral Palsy  (September 2017, AACPDM Care Pathways, for review 2020) https://www.aacpdm.org/publications/care-pathways/sialorrhea",
     "",
     ""
-  ]
+  ],
+  "gmf_version": 2
 }

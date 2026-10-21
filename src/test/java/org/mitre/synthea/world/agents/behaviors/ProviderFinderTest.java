@@ -9,6 +9,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mitre.synthea.world.agents.Person;
 import org.mitre.synthea.world.agents.Provider;
+import org.mitre.synthea.world.agents.Provider.ProviderType;
+import org.mitre.synthea.world.agents.behaviors.providerfinder.ProviderFinderNearest;
+import org.mitre.synthea.world.agents.behaviors.providerfinder.ProviderFinderRandom;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
 
 public class ProviderFinderTest {
@@ -31,7 +34,6 @@ public class ProviderFinderTest {
       Provider provider = new Provider();
       provider.id = i + "";
       provider.getLonLat().setLocation(i, i);
-      provider.quality = i;
       provider.servicesProvided.add(EncounterType.WELLNESS);
       providers.add(provider);
     }
@@ -49,7 +51,7 @@ public class ProviderFinderTest {
   public void testVeteranNearest() {
     ProviderFinderNearest finder = new ProviderFinderNearest();
     // Making the second facility a VA facility
-    providers.get(1).type = "VA Facility";
+    providers.get(1).type = ProviderType.VETERAN;
     // Making the test person a veteran, so they will prefer the closest VA facility in a
     // non-emergency situation
     person.attributes.put(Person.VETERAN, "Civil War");
@@ -62,7 +64,7 @@ public class ProviderFinderTest {
   public void testNonEligibleIHSNearest() {
     ProviderFinderNearest finder = new ProviderFinderNearest();
     // Making the first facility an IHS facility
-    providers.get(0).type = "IHS Facility";
+    providers.get(0).type = ProviderType.IHS;
     // Setting the race to white for a test person so that they will not go to an IHS facility in a
     // non-emergency situation
     person.attributes.put(Person.RACE, "white");
@@ -93,41 +95,6 @@ public class ProviderFinderTest {
   @Test
   public void testNoNearest() {
     ProviderFinderNearest finder = new ProviderFinderNearest();
-    List<Provider> options = new ArrayList<Provider>();
-    Provider provider = finder.find(options, person, EncounterType.WELLNESS, 0L);
-    Assert.assertNull(provider);
-  }
-
-  @Test
-  public void testQuality() {
-    ProviderFinderQuality finder = new ProviderFinderQuality();
-    Provider provider = finder.find(providers, person, EncounterType.WELLNESS, 0L);
-    Assert.assertNotNull(provider);
-    Assert.assertEquals("3", provider.id);
-  }
-
-  @Test
-  public void testAnyQuality() {
-    ProviderFinderQuality finder = new ProviderFinderQuality();
-    Provider provider = finder.find(providers, person, null, 0L);
-    Assert.assertNotNull(provider);
-    Assert.assertEquals("3", provider.id);
-  }
-
-  @Test
-  public void testManyQuality() {
-    ProviderFinderQuality finder = new ProviderFinderQuality();
-    List<Provider> options = new ArrayList<Provider>();
-    options.addAll(providers);
-    options.addAll(providers);
-    Provider provider = finder.find(options, person, EncounterType.WELLNESS, 0L);
-    Assert.assertNotNull(provider);
-    Assert.assertEquals("3", provider.id);
-  }
-
-  @Test
-  public void testNoQuality() {
-    ProviderFinderQuality finder = new ProviderFinderQuality();
     List<Provider> options = new ArrayList<Provider>();
     Provider provider = finder.find(options, person, EncounterType.WELLNESS, 0L);
     Assert.assertNull(provider);

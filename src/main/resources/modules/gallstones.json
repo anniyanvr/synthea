@@ -326,8 +326,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 65275009,
-          "display": "Acute Cholecystitis"
+          "code": "65275009",
+          "display": "Acute cholecystitis (disorder)"
         }
       ],
       "distributed_transition": [
@@ -351,8 +351,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 235919008,
-          "display": "Cholelithiasis"
+          "code": "235919008",
+          "display": "Gallbladder calculus (disorder)"
         }
       ],
       "remarks": [
@@ -377,8 +377,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 50849002,
-          "display": "Emergency Room Admission"
+          "code": "50849002",
+          "display": "Emergency room admission (procedure)"
         }
       ],
       "remarks": [
@@ -486,8 +486,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 45595009,
-          "display": "Laparoscopic Removal of Gall Bladder"
+          "code": "45595009",
+          "display": "Laparoscopic cholecystectomy (procedure)"
         }
       ],
       "duration": {
@@ -529,8 +529,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 38102005,
-          "display": "Open Removal of Gall Bladder"
+          "code": "38102005",
+          "display": "Cholecystectomy (procedure)"
         }
       ],
       "duration": {
@@ -577,8 +577,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 91302008,
-          "display": "Death due to sepsis"
+          "code": "91302008",
+          "display": "Sepsis (disorder)"
         }
       ]
     },
@@ -594,8 +594,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 385486001,
-          "display": "Postoperative complication"
+          "code": "385486001",
+          "display": "Postoperative complication (disorder)"
         }
       ]
     },
@@ -610,8 +610,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 185349003,
-          "display": "Encounter for 'check-up'"
+          "code": "185349003",
+          "display": "Encounter for check up (procedure)"
         }
       ],
       "direct_transition": "End_Postoperative_Follow-up",
@@ -623,8 +623,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 185349003,
-          "display": "Encounter for 'check-up'"
+          "code": "185349003",
+          "display": "Encounter for check up (procedure)"
         }
       ],
       "reason": "Open_Cholecystectomy",
@@ -661,7 +661,8 @@
           "display": "Sodium Chloride 9 MG/ML Injectable Solution"
         }
       ],
-      "direct_transition": "Antiemetic"
+      "direct_transition": "Antiemetic",
+      "administration": false
     },
     "Antiemetic": {
       "type": "MedicationOrder",
@@ -676,7 +677,8 @@
       "remarks": [
         "Based on the safety and efficacy of ondansetron, it may be used as a first-line agent for relief of nausea or vomiting for most patient populations in the ED.",
         "https://www.ncbi.nlm.nih.gov/pubmed/20022195"
-      ]
+      ],
+      "administration": true
     },
     "Morphine": {
       "type": "MedicationOrder",
@@ -687,21 +689,22 @@
           "display": "1 ML Morphine Sulfate 5 MG/ML Injection"
         }
       ],
-      "direct_transition": "Delay_for_Surgical_Appointment"
+      "direct_transition": "Delay_for_Surgical_Appointment",
+      "administration": true
     },
     "Gall_Bladder_Imaging": {
       "type": "ImagingStudy",
       "procedure_code": {
         "system": "SNOMED-CT",
-        "code": 426701000119108,
-        "display": "Ultrasonography of abdomen, right upper quadrant and epigastrium"
+        "code": "426701000119108",
+        "display": "Ultrasonography of abdomen, right upper quadrant and epigastrium (procedure)"
       },
       "series": [
         {
           "body_site": {
             "system": "SNOMED-CT",
-            "code": 50519007,
-            "display": "Structure of right upper quadrant of abdomen"
+            "code": "50519007",
+            "display": "Structure of right upper quadrant of abdomen (body structure)"
           },
           "modality": {
             "system": "DICOM-DCM",
@@ -736,26 +739,26 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 133899007,
-          "display": "Postoperative care"
+          "code": "736372004",
+          "display": "Discharge care plan (record artifact)"
         }
       ],
       "direct_transition": "Prescribe_Opioids",
       "activities": [
         {
           "system": "SNOMED-CT",
-          "code": 436861000124104,
-          "display": "Decreased fat diet"
+          "code": "1055207008",
+          "display": "Decreased fat and oil diet (regime/therapy)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 225317005,
-          "display": "Restriction of movement"
+          "code": "225317005",
+          "display": "Restriction of movement (regime/therapy)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 225358003,
-          "display": "Wound care"
+          "code": "225358003",
+          "display": "Wound care (regime/therapy)"
         }
       ]
     },
@@ -790,7 +793,7 @@
             {
               "system": "LOINC",
               "code": "42719-5",
-              "display": "Total Bilirubin (Elevated)"
+              "display": "Bilirubin.total [Mass/volume] in Blood"
             }
           ],
           "range": {
@@ -805,7 +808,7 @@
             {
               "system": "LOINC",
               "code": "1742-6",
-              "display": "ALT (Elevated)"
+              "display": "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma"
             }
           ],
           "range": {
@@ -820,7 +823,7 @@
             {
               "system": "LOINC",
               "code": "1920-8",
-              "display": "AST (Elevated)"
+              "display": "Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma"
             }
           ],
           "range": {
@@ -835,7 +838,7 @@
             {
               "system": "LOINC",
               "code": "2345-7",
-              "display": "Glucose"
+              "display": "Glucose [Mass/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Glucose"
@@ -847,7 +850,7 @@
             {
               "system": "LOINC",
               "code": "3094-0",
-              "display": "Urea Nitrogen"
+              "display": "Urea nitrogen [Mass/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Urea Nitrogen"
@@ -859,7 +862,7 @@
             {
               "system": "LOINC",
               "code": "2160-0",
-              "display": "Creatinine"
+              "display": "Creatinine [Mass/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Creatinine"
@@ -871,7 +874,7 @@
             {
               "system": "LOINC",
               "code": "17861-6",
-              "display": "Calcium"
+              "display": "Calcium [Mass/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Calcium"
@@ -883,7 +886,7 @@
             {
               "system": "LOINC",
               "code": "2951-2",
-              "display": "Sodium"
+              "display": "Sodium [Moles/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Sodium"
@@ -895,7 +898,7 @@
             {
               "system": "LOINC",
               "code": "2823-3",
-              "display": "Potassium"
+              "display": "Potassium [Moles/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Potassium"
@@ -907,7 +910,7 @@
             {
               "system": "LOINC",
               "code": "2075-0",
-              "display": "Chloride"
+              "display": "Chloride [Moles/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Chloride"
@@ -919,7 +922,7 @@
             {
               "system": "LOINC",
               "code": "2028-9",
-              "display": "Carbon Dioxide"
+              "display": "Carbon dioxide, total [Moles/volume] in Serum or Plasma"
             }
           ],
           "vital_sign": "Carbon Dioxide"
@@ -931,7 +934,7 @@
             {
               "system": "LOINC",
               "code": "33037-3",
-              "display": "Anion Gap"
+              "display": "Anion gap in Serum or Plasma by calculation"
             }
           ],
           "range": {
@@ -946,7 +949,7 @@
             {
               "system": "LOINC",
               "code": "2885-2",
-              "display": "Protein"
+              "display": "Protein [Mass/volume] in Serum or Plasma"
             }
           ],
           "range": {
@@ -961,7 +964,7 @@
             {
               "system": "LOINC",
               "code": "1751-7",
-              "display": "Albumin"
+              "display": "Albumin [Mass/volume] in Serum or Plasma"
             }
           ],
           "range": {
@@ -976,7 +979,7 @@
             {
               "system": "LOINC",
               "code": "10834-0",
-              "display": "Globulin"
+              "display": "Globulin [Mass/volume] in Serum by calculation"
             }
           ],
           "range": {
@@ -991,7 +994,7 @@
             {
               "system": "LOINC",
               "code": "6768-6",
-              "display": "Alkaline Phosphatase"
+              "display": "Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma"
             }
           ],
           "range": {
@@ -1020,12 +1023,12 @@
       "observations": [
         {
           "category": "laboratory",
-          "unit": "K/uL",
+          "unit": "10*3/uL",
           "codes": [
             {
               "system": "LOINC",
               "code": "26464-8",
-              "display": "White Blood Cell (Elevated)"
+              "display": "Leukocytes [#/volume] in Blood"
             }
           ],
           "range": {
@@ -1040,7 +1043,7 @@
             {
               "system": "LOINC",
               "code": "26453-1",
-              "display": "Red Blood Cell"
+              "display": "Erythrocytes [#/volume] in Blood"
             }
           ],
           "range": {
@@ -1055,7 +1058,7 @@
             {
               "system": "LOINC",
               "code": "718-7",
-              "display": "Hemoglobin"
+              "display": "Hemoglobin [Mass/volume] in Blood"
             }
           ],
           "range": {
@@ -1070,7 +1073,7 @@
             {
               "system": "LOINC",
               "code": "20570-8",
-              "display": "Hematocrit"
+              "display": "Hematocrit [Volume Fraction] of Blood by calculation"
             }
           ],
           "range": {
@@ -1085,7 +1088,7 @@
             {
               "system": "LOINC",
               "code": "30428-7",
-              "display": "MCV"
+              "display": "MCV [Entitic mean volume] in Red Blood Cells"
             }
           ],
           "range": {
@@ -1100,7 +1103,7 @@
             {
               "system": "LOINC",
               "code": "30385-9",
-              "display": "RBC Distribution Width"
+              "display": "Erythrocyte [DistWidth] in Blood"
             }
           ],
           "range": {
@@ -1115,7 +1118,7 @@
             {
               "system": "LOINC",
               "code": "26515-7",
-              "display": "Platelet Count"
+              "display": "Platelets [#/volume] in Blood"
             }
           ],
           "range": {
@@ -1144,8 +1147,8 @@
       "direct_transition": "ECG",
       "value_code": {
         "system": "SNOMED-CT",
-        "code": 53566005,
-        "display": "Positive Murphy's Sign"
+        "code": "53566005",
+        "display": "Murphy's sign (finding)"
       }
     },
     "Chole_Symptom4_Ends": {
@@ -1190,7 +1193,8 @@
       "remarks": [
         "Assuming the patient is not allergic to Penicillin, piperacillin is recommended for acute cholecystitis:",
         "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2784497/"
-      ]
+      ],
+      "administration": true
     },
     "Cefotaxime": {
       "type": "MedicationOrder",
@@ -1205,7 +1209,8 @@
         "For patients allergic to penicillin, a 3rd-gen cephalosporin-based antibiotic is recommended for acute cholecystitis:",
         "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2784497/"
       ],
-      "direct_transition": "Cefotaxime_End"
+      "direct_transition": "Cefotaxime_End",
+      "administration": true
     },
     "Anesthesia": {
       "type": "CallSubmodule",
@@ -1217,8 +1222,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 29303009,
-          "display": "Electrocardiographic procedure"
+          "code": "29303009",
+          "display": "Electrocardiographic procedure (procedure)"
         }
       ],
       "duration": {
@@ -1258,8 +1263,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 29303009,
-          "display": "Electrocardiographic procedure"
+          "code": "29303009",
+          "display": "Electrocardiographic procedure (procedure)"
         }
       ],
       "sampled_data": {
@@ -1276,8 +1281,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 29303009,
-          "display": "Electrocardiographic procedure"
+          "code": "29303009",
+          "display": "Electrocardiographic procedure (procedure)"
         }
       ],
       "attachment": {
@@ -1310,7 +1315,8 @@
           "display": "1 ML heparin sodium, porcine 5000 UNT/ML Injection"
         }
       ],
-      "direct_transition": "Heparin_End"
+      "direct_transition": "Heparin_End",
+      "administration": true
     },
     "Gallstones_Removed": {
       "type": "ConditionEnd",
@@ -1358,8 +1364,8 @@
             "codes": [
               {
                 "system": "SNOMED-CT",
-                "code": 91936005,
-                "display": "Allergy to Penicillin"
+                "code": "91936005",
+                "display": "Allergy to penicillin (finding)"
               }
             ]
           }

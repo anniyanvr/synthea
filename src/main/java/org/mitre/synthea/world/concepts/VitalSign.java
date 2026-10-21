@@ -2,6 +2,7 @@ package org.mitre.synthea.world.concepts;
 
 import com.google.gson.annotations.SerializedName;
 
+/** Enum containing vital signs like BMI, blood pressure, cholesterol, heart rate, etc. */
 public enum VitalSign {
 
   @SerializedName("Height") HEIGHT,
@@ -10,6 +11,7 @@ public enum VitalSign {
   @SerializedName("Weight Percentile") WEIGHT_PERCENTILE,
   @SerializedName("BMI") BMI,
   @SerializedName("Head Circumference") HEAD,
+  @SerializedName("Head Circumference Percentile") HEAD_PERCENTILE,
   @SerializedName("Systolic Blood Pressure") SYSTOLIC_BLOOD_PRESSURE,
   @SerializedName("Diastolic Blood Pressure") DIASTOLIC_BLOOD_PRESSURE,
   @SerializedName("Oxygen Saturation") OXYGEN_SATURATION,

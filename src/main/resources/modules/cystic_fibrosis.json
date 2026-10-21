@@ -76,8 +76,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 190905008,
-          "display": "Cystic Fibrosis"
+          "code": "190905008",
+          "display": "Cystic fibrosis (disorder)"
         }
       ],
       "complex_transition": [
@@ -106,7 +106,6 @@
           ]
         },
         {
-          "distributions": [],
           "transition": "chronic_cough"
         }
       ]
@@ -160,8 +159,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 67799006,
-          "display": "Diagnosis of cystic fibrosis using sweat test and gene test"
+          "code": "67799006",
+          "display": "Cystic fibrosis, prenatal detection (procedure)"
         }
       ],
       "conditional_transition": [
@@ -178,15 +177,16 @@
       ],
       "remarks": [
         "https://www.cff.org/What-is-CF/Testing/"
-      ]
+      ],
+      "reason": "Cystic_Fibrosis"
     },
     "Sweat_Test": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 86964003,
-          "display": "Sweat Test"
+          "code": "86964003",
+          "display": "Cystic fibrosis sweat test (procedure)"
         }
       ],
       "duration": {
@@ -205,8 +205,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 444260001,
-          "display": "20 Gene mutation test"
+          "code": "444260001",
+          "display": "Screen for 20 common genetic mutations of cystic fibrosis using amplification refractory mutation system polymerase chain reaction assay technique (procedure)"
         }
       ],
       "duration": {
@@ -331,8 +331,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 206523001,
-          "display": "Meconium Ileus"
+          "code": "206523001",
+          "display": "Meconium ileus (disorder)"
         }
       ],
       "direct_transition": "Fibrosis_Screening",
@@ -345,8 +345,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 385186005,
-          "display": "Enema"
+          "code": "61919008",
+          "display": "Giving patient an enema (procedure)"
         }
       ],
       "duration": {
@@ -357,7 +357,8 @@
       "direct_transition": "Meconium_Ileus_Resolved",
       "remarks": [
         "http://www.seattlechildrens.org/medical-conditions/digestive-gastrointestinal-conditions/meconium-ileus/"
-      ]
+      ],
+      "reason": "Meconium Ileus"
     },
     "Male_Infertility": {
       "type": "ConditionOnset",
@@ -365,8 +366,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 427089005,
-          "display": "Male Infertility"
+          "code": "707418001",
+          "display": "Male infertility due to cystic fibrosis (disorder)"
         }
       ],
       "direct_transition": "chronic_cough"
@@ -377,8 +378,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 707577004,
-          "display": "Female Infertility"
+          "code": "707577004",
+          "display": "Female infertility due to cystic fibrosis (disorder)"
         }
       ],
       "direct_transition": "chronic_cough",
@@ -391,8 +392,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 60151004,
-          "display": "Neonatal Screening"
+          "code": "60151004",
+          "display": "Neonatal screening (procedure)"
         }
       ],
       "duration": {
@@ -428,15 +429,15 @@
     "Meconium_Ileus_Resolved": {
       "type": "ConditionEnd",
       "direct_transition": "Sweat_Test",
-      "condition_onset": "Meconium_Ileus"
+      "condition_onset": "Meconium Ileus"
     },
     "CF_CarePlan": {
       "type": "CarePlanStart",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 734163000,
-          "display": "Care Plan"
+          "code": "734163000",
+          "display": "Care plan (record artifact)"
         }
       ],
       "direct_transition": "End_Screening",
@@ -444,28 +445,28 @@
       "activities": [
         {
           "system": "SNOMED-CT",
-          "code": 710971000,
-          "display": "Airway Clearance"
+          "code": "710971000",
+          "display": "Maintaining clear airway (procedure)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 56251003,
-          "display": "Nebulizer Therapy"
+          "code": "56251003",
+          "display": "Nebulizer therapy (procedure)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 392020005,
-          "display": "PICC care"
+          "code": "392020005",
+          "display": "Peripherally inserted central catheter care (procedure)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 226029000,
-          "display": "Exercise Therapy"
+          "code": "226029000",
+          "display": "Exercises (regime/therapy)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 386373004,
-          "display": "Nutrition Plan"
+          "code": "386373004",
+          "display": "Nutrition therapy (regime/therapy)"
         }
       ],
       "remarks": [
@@ -489,7 +490,8 @@
         "https://www.cff.org/Life-With-CF/Daily-Life/Fitness-and-Nutrition/Nutrition/Taking-Care-of-Your-Digestive-System/Enzymes/",
         "",
         "\"Between 85 and 90% of CF patients have pancreatic insufficiency."
-      ]
+      ],
+      "chronic": true
     },
     "Life_With_Cystic_Fibrosis": {
       "type": "Delay",
@@ -687,14 +689,15 @@
         {
           "system": "RxNorm",
           "code": 1243052,
-          "display": "Kalydeco 150 MG Oral Tablet"
+          "display": "ivacaftor 150 MG Oral Tablet [Kalydeco]"
         }
       ],
       "direct_transition": "Prescribe_Mucus_Thinner",
       "reason": "Cystic_Fibrosis",
       "remarks": [
         "https://www.cff.org/About-Us/Media-Center/Press-Releases/The-Cystic-Fibrosis-Foundation-Applauds-FDA-Approval-of-Kalydeco/"
-      ]
+      ],
+      "chronic": true
     },
     "Prescribe_Mucus_Thinner": {
       "type": "MedicationOrder",
@@ -702,7 +705,7 @@
         {
           "system": "RxNorm",
           "code": 205532,
-          "display": "Pulmozyme (Dornase Alfa)"
+          "display": "dornase alfa 1 MG/ML Inhalation Solution [Pulmozyme]"
         }
       ],
       "reason": "Cystic_Fibrosis",
@@ -715,7 +718,8 @@
           "transition": "CF_CarePlan",
           "distribution": 0.1
         }
-      ]
+      ],
+      "chronic": true
     },
     "Salty_Skin": {
       "type": "Symptom",
@@ -732,8 +736,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 185349003,
-          "display": "Encounter for check up"
+          "code": "185349003",
+          "display": "Encounter for check up (procedure)"
         }
       ],
       "conditional_transition": [
@@ -796,15 +800,16 @@
         "http://pediatrics.aappublications.org/content/early/2016/03/22/peds.2015-1784",
         "",
         "Overview of the standard of care per quarter"
-      ]
+      ],
+      "reason": "Cystic_Fibrosis"
     },
     "Chest_XRay": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 399208008,
-          "display": "Chest X-ray"
+          "code": "399208008",
+          "display": "Plain X-ray of chest (procedure)"
         }
       ],
       "duration": {
@@ -826,15 +831,16 @@
       ],
       "remarks": [
         "Chest X-rays should be done at least every other year, as shown in the link at \"Quarterly Checkup\""
-      ]
+      ],
+      "reason": "Cystic_Fibrosis"
     },
     "Oropharyngeal_Culture": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 104173009,
-          "display": "Sputum Culture"
+          "code": "104173009",
+          "display": "Microbial culture of sputum (procedure)"
         }
       ],
       "duration": {
@@ -883,7 +889,8 @@
             }
           ]
         }
-      ]
+      ],
+      "reason": "Cystic_Fibrosis"
     },
     "Develop_Diabetes": {
       "type": "ConditionOnset",
@@ -891,8 +898,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 427089005,
-          "display": "Diabetes from Cystic Fibrosis"
+          "code": "427089005",
+          "display": "Diabetes mellitus due to cystic fibrosis (disorder)"
         }
       ],
       "direct_transition": "diatbetesState",
@@ -908,8 +915,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 113076002,
-          "display": "Oral Glucose Tolerance Test"
+          "code": "113076002",
+          "display": "Glucose tolerance test (procedure)"
         }
       ],
       "duration": {
@@ -947,8 +954,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 703040004,
-          "display": "Agreeing on diabetes care plan"
+          "code": "703040004",
+          "display": "Agreeing on diabetes care plan (procedure)"
         }
       ],
       "direct_transition": "Oropharyngeal_Culture",
@@ -956,13 +963,13 @@
       "activities": [
         {
           "system": "SNOMED-CT",
-          "code": 308113006,
-          "display": "Self Monitoring of Blood Glucose"
+          "code": "308113006",
+          "display": "Self-monitoring of blood glucose (procedure)"
         },
         {
           "system": "SNOMED-CT",
-          "code": 225302006,
-          "display": "Insulin Therapy"
+          "code": "225302006",
+          "display": "Insulin regime (regime/therapy)"
         }
       ]
     },
@@ -1026,8 +1033,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 232657004,
-          "display": "Lung Transplant"
+          "code": "232657004",
+          "display": "Single lung transplant (procedure)"
         }
       ],
       "duration": {
@@ -1049,8 +1056,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 82078001,
-          "display": "Take blood sample"
+          "code": "82078001",
+          "display": "Collection of blood specimen for laboratory (procedure)"
         }
       ],
       "duration": {
@@ -1058,15 +1065,16 @@
         "high": 30,
         "unit": "minutes"
       },
-      "direct_transition": "EndCheckup"
+      "direct_transition": "EndCheckup",
+      "reason": "Cystic_Fibrosis"
     },
     "Pulmonary_Function_Test": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 23426006,
-          "display": "Pulmonary Function Test"
+          "code": "23426006",
+          "display": "Measurement of respiratory function (procedure)"
         }
       ],
       "duration": {
@@ -1074,7 +1082,8 @@
         "high": 15,
         "unit": "minutes"
       },
-      "direct_transition": "Take_Blood_Sample"
+      "direct_transition": "Take_Blood_Sample",
+      "reason": "Cystic_Fibrosis"
     },
     "startDiseaseChain": {
       "type": "Simple",
@@ -1187,8 +1196,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 11218009,
-          "display": "Infection caused by Pseudomonas aeruginosa"
+          "code": "11218009",
+          "display": "Infection caused by Pseudomonas aeruginosa (disorder)"
         }
       ],
       "direct_transition": "Quarterly_Checkup"
@@ -1199,8 +1208,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 406602003,
-          "display": "Infection caused by Staphylococcus aureus"
+          "code": "406602003",
+          "display": "Infection caused by Staphylococcus aureus (disorder)"
         }
       ],
       "direct_transition": "Quarterly_Checkup"
@@ -1218,7 +1227,8 @@
       "reason": "Develop_Infection_1",
       "remarks": [
         "https://www.ncbi.nlm.nih.gov/pubmed/2941289"
-      ]
+      ],
+      "administration": true
     },
     "Prescribe_Vancomycin": {
       "type": "MedicationOrder",
@@ -1233,7 +1243,8 @@
       "remarks": [
         "https://www.mayoclinic.org/diseases-conditions/staph-infections/diagnosis-treatment/drc-20356227"
       ],
-      "reason": "Develop_Infection_2"
+      "reason": "Develop_Infection_2",
+      "administration": true
     },
     "patient_dies": {
       "type": "Simple",
@@ -1350,7 +1361,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 448813005,
+          "code": "448813005",
           "display": "Sepsis caused by Pseudomonas (disorder)"
         }
       ],
@@ -1362,7 +1373,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 50849002,
+          "code": "50849002",
           "display": "Emergency room admission (procedure)"
         }
       ],
@@ -1393,7 +1404,7 @@
           "transition": "Tracheostomy",
           "condition": {
             "condition_type": "PriorState",
-            "name": "pulmonary_infective_exacerbation",
+            "name": "pulmonary_exacerbation",
             "within": {
               "quantity": 1,
               "unit": "days"
@@ -1414,7 +1425,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 14152002,
+          "code": "14152002",
           "display": "Intravenous infusion (procedure)"
         }
       ],
@@ -1459,15 +1470,16 @@
         {
           "transition": "Release_From_Hospital"
         }
-      ]
+      ],
+      "reason": "CF_Complication"
     },
     "Antibiotic_Therapy": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 281790008,
-          "display": "Intravenous antibiotic therapy"
+          "code": "281790008",
+          "display": "Intravenous antibiotic therapy (procedure)"
         }
       ],
       "duration": {
@@ -1475,7 +1487,8 @@
         "high": 90,
         "unit": "minutes"
       },
-      "direct_transition": "Intravenous_Infusion"
+      "direct_transition": "Intravenous_Infusion",
+      "reason": "CF_Complication"
     },
     "death": {
       "type": "Death",
@@ -1484,8 +1497,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 448813005,
-          "display": "Sepsis of Pseudomonas"
+          "code": "448813005",
+          "display": "Sepsis caused by Pseudomonas (disorder)"
         }
       ],
       "range": {
@@ -1501,8 +1514,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 448417001,
-          "display": "Sepsis caused by Staphylococcus aureus"
+          "code": "448417001",
+          "display": "Sepsis caused by Staphylococcus aureus (disorder)"
         }
       ],
       "direct_transition": "low_blood_pressure"
@@ -1544,8 +1557,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 448813005,
-          "display": "Sepsis caused by Staphylococcus aureus"
+          "code": "448813005",
+          "display": "Sepsis caused by Pseudomonas (disorder)"
         }
       ]
     },
@@ -1554,7 +1567,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 48387007,
+          "code": "48387007",
           "display": "Incision of trachea (procedure)"
         }
       ],
@@ -1563,7 +1576,8 @@
         "high": 60,
         "unit": "minutes"
       },
-      "direct_transition": "Oxygen_Therapy"
+      "direct_transition": "Oxygen_Therapy",
+      "reason": "CF_Complication"
     },
     "wheezing": {
       "type": "Symptom",
@@ -1581,8 +1595,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 65710008,
-          "display": "Death due to acute respiratory failure"
+          "code": "65710008",
+          "display": "Acute respiratory failure (disorder)"
         }
       ],
       "range": {
@@ -1596,8 +1610,8 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 65710008,
-          "display": "Oxygen Therapy"
+          "code": "65710008",
+          "display": "Acute respiratory failure (disorder)"
         }
       ],
       "duration": {
@@ -1616,7 +1630,8 @@
         {
           "transition": "Release_From_Hospital"
         }
-      ]
+      ],
+      "reason": "CF_Complication"
     },
     "Release_From_Hospital": {
       "type": "EncounterEnd",
@@ -1651,7 +1666,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 65710008,
+          "code": "65710008",
           "display": "Acute respiratory failure (disorder)"
         }
       ],
@@ -1708,11 +1723,12 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 16602611000119108,
+          "code": "16602611000119108",
           "display": "Awaiting transplantation of lung (situation)"
         }
       ],
-      "direct_transition": "Lung_Transplant"
+      "direct_transition": "Lung_Transplant",
+      "reason": "Cystic_Fibrosis"
     },
     "Lung_Transplant_End": {
       "type": "EncounterEnd",

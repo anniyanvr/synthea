@@ -161,7 +161,7 @@
         {
           "system": "SNOMED-CT",
           "code": "24079001",
-          "display": "Atopic dermatitis"
+          "display": "Atopic dermatitis (disorder)"
         }
       ],
       "direct_transition": "PCP_Encounter"
@@ -174,7 +174,7 @@
         {
           "system": "SNOMED-CT",
           "code": "40275004",
-          "display": "Contact dermatitis"
+          "display": "Contact dermatitis (disorder)"
         }
       ],
       "direct_transition": "PCP_Encounter"
@@ -190,11 +190,12 @@
       ],
       "encounter_class": "ambulatory",
       "reason": "dermatitis",
+      "telemedicine_possibility": "possible",
       "codes": [
         {
           "system": "SNOMED-CT",
           "code": "185347001",
-          "display": "Encounter for problem"
+          "display": "Encounter for problem (procedure)"
         }
       ],
       "direct_transition": "Dermatitis_Symptom1"
@@ -239,14 +240,14 @@
         {
           "system": "SNOMED-CT",
           "code": "711282006",
-          "display": "Skin condition care"
+          "display": "Skin condition care (regime/therapy)"
         }
       ],
       "activities": [
         {
           "system": "SNOMED-CT",
           "code": "225130001",
-          "display": "Application of moisturizer to skin"
+          "display": "Application of moisturizer to skin (procedure)"
         }
       ],
       "direct_transition": "End_Diagnosis_Encounter"
@@ -282,11 +283,12 @@
         "1/3 of all eczema cases are severe. 0.5 * 0.67 ~= 0.33"
       ],
       "encounter_class": "ambulatory",
+      "telemedicine_possibility": "possible",
       "codes": [
         {
           "system": "SNOMED-CT",
           "code": "185347001",
-          "display": "Encounter for problem"
+          "display": "Encounter for problem (procedure)"
         }
       ],
       "complex_transition": [
@@ -338,7 +340,8 @@
             }
           ]
         }
-      ]
+      ],
+      "reason": "dermatitis"
     },
     "Early_Childhood_AD_Moderate_Observations": {
       "type": "CallSubmodule",
@@ -517,11 +520,12 @@
       "type": "Encounter",
       "encounter_class": "ambulatory",
       "reason": "dermatitis",
+      "telemedicine_possibility": "possible",
       "codes": [
         {
           "system": "SNOMED-CT",
           "code": "185347001",
-          "display": "Encounter for problem"
+          "display": "Encounter for problem (procedure)"
         }
       ],
       "conditional_transition": [

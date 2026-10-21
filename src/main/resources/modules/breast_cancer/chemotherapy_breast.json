@@ -19,7 +19,8 @@
       ],
       "direct_transition": "Adjuvant Chemotherapy Procedure",
       "assign_to_attribute": "chemoMed",
-      "reason": "breast_cancer_condition"
+      "reason": "breast_cancer_condition",
+      "administration": true
     },
     "Anthracyclines": {
       "type": "Simple",
@@ -45,7 +46,8 @@
       ],
       "direct_transition": "Adjuvant Chemotherapy Procedure",
       "assign_to_attribute": "chemoMed",
-      "reason": "breast_cancer_condition"
+      "reason": "breast_cancer_condition",
+      "administration": true
     },
     "Taxanes": {
       "type": "Simple",
@@ -62,7 +64,8 @@
       ],
       "direct_transition": "Adjuvant Chemotherapy Procedure",
       "assign_to_attribute": "chemoMed",
-      "reason": "breast_cancer_condition"
+      "reason": "breast_cancer_condition",
+      "administration": true
     },
     "Doxorubicin": {
       "type": "MedicationOrder",
@@ -80,7 +83,8 @@
         "https://www.cancer.org/cancer/breast-cancer/treatment/chemotherapy-for-breast-cancer.html"
       ],
       "assign_to_attribute": "chemoMed",
-      "reason": "breast_cancer_condition"
+      "reason": "breast_cancer_condition",
+      "administration": true
     },
     "Epirubicin": {
       "type": "MedicationOrder",
@@ -93,7 +97,8 @@
       ],
       "direct_transition": "Adjuvant Chemotherapy Procedure",
       "assign_to_attribute": "chemoMed",
-      "reason": "breast_cancer_condition"
+      "reason": "breast_cancer_condition",
+      "administration": true
     },
     "Paclitaxel": {
       "type": "MedicationOrder",
@@ -106,14 +111,15 @@
       ],
       "direct_transition": "Adjuvant Chemotherapy Procedure",
       "assign_to_attribute": "chemoMed",
-      "reason": "breast_cancer_condition"
+      "reason": "breast_cancer_condition",
+      "administration": true
     },
     "Adjuvant Chemotherapy Procedure": {
       "type": "Procedure",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 367336001,
+          "code": "367336001",
           "display": "Chemotherapy (procedure)"
         }
       ],
@@ -152,13 +158,13 @@
     },
     "Start New Cycle": {
       "type": "Encounter",
-      "encounter_class": "inpatient",
+      "encounter_class": "ambulatory",
       "reason": "Breast Cancer",
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 185347001,
-          "display": "Encounter for problem"
+          "code": "185347001",
+          "display": "Encounter for problem (procedure)"
         }
       ],
       "direct_transition": "Choose Chemo Drug"
@@ -272,7 +278,7 @@
         {
           "condition": {
             "condition_type": "PriorState",
-            "name": ""
+            "name": "5-fluorouracil"
           },
           "distributions": [
             {

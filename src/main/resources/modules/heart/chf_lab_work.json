@@ -1,5 +1,6 @@
 {
   "name": "chf_lab_work",
+  "specialty": "CARDIOVASCULAR DISEASE (CARDIOLOGY)",
   "remarks": [
     "This submodule captures all the initial lab work based on the STS data dictionary and standard of care.",
     "",
@@ -31,7 +32,7 @@
         {
           "system": "LOINC",
           "code": "33762-6",
-          "display": "NT-proBNP"
+          "display": "Natriuretic peptide.B prohormone N-Terminal [Mass/volume] in Serum or Plasma"
         }
       ],
       "range": {
@@ -46,7 +47,7 @@
         {
           "system": "LOINC",
           "code": "58410-2",
-          "display": "Complete blood count (hemogram) panel - Blood by Automated count"
+          "display": "CBC panel - Blood by Automated count"
         }
       ],
       "observations": [
@@ -117,7 +118,7 @@
             {
               "system": "LOINC",
               "code": "787-2",
-              "display": "MCV [Entitic volume] by Automated count"
+              "display": "MCV [Entitic mean volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -147,7 +148,7 @@
             {
               "system": "LOINC",
               "code": "786-4",
-              "display": "MCHC [Mass/volume] by Automated count"
+              "display": "MCHC [Entitic Mass/volume] in Red Blood Cells by Automated count"
             }
           ],
           "range": {
@@ -162,7 +163,7 @@
             {
               "system": "LOINC",
               "code": "788-0",
-              "display": "Erythrocyte distribution width [Ratio] by Automated count"
+              "display": "Erythrocyte [DistWidth] in Blood by Automated count"
             }
           ],
           "range": {
@@ -301,7 +302,7 @@
             {
               "system": "LOINC",
               "code": "33914-3",
-              "display": "Glomerular filtration rate/1.73 sq M.predicted"
+              "display": "Glomerular filtration rate [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD)/1.73 sq M"
             }
           ],
           "vital_sign": "EGFR"
@@ -451,7 +452,7 @@
         {
           "system": "LOINC",
           "code": "57698-3",
-          "display": "Lipid Panel"
+          "display": "Lipid panel with direct LDL - Serum or Plasma"
         }
       ],
       "observations": [
@@ -462,7 +463,7 @@
             {
               "system": "LOINC",
               "code": "2093-3",
-              "display": "Total Cholesterol"
+              "display": "Cholesterol [Mass/volume] in Serum or Plasma"
             }
           ],
           "unit": "mg/dL"
@@ -474,7 +475,7 @@
             {
               "system": "LOINC",
               "code": "2571-8",
-              "display": "Triglycerides"
+              "display": "Triglyceride [Mass/volume] in Serum or Plasma"
             }
           ],
           "unit": "mg/dL"
@@ -486,7 +487,7 @@
             {
               "system": "LOINC",
               "code": "18262-6",
-              "display": "Low Density Lipoprotein Cholesterol"
+              "display": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay"
             }
           ],
           "unit": "mg/dL"
@@ -498,7 +499,7 @@
             {
               "system": "LOINC",
               "code": "2085-9",
-              "display": "High Density Lipoprotein Cholesterol"
+              "display": "Cholesterol in HDL [Mass/volume] in Serum or Plasma"
             }
           ],
           "unit": "mg/dL"

@@ -7,7 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
@@ -37,14 +37,16 @@ import org.mitre.synthea.modules.EncounterModule;
 import org.mitre.synthea.modules.LifecycleModule;
 import org.mitre.synthea.modules.QualityOfLifeModule;
 import org.mitre.synthea.modules.WeightLossModule;
-import org.mitre.synthea.world.agents.Payer;
+import org.mitre.synthea.world.agents.PayerManager;
 import org.mitre.synthea.world.agents.Person;
 import org.mitre.synthea.world.agents.Provider;
+import org.mitre.synthea.world.concepts.ClinicianSpecialty;
 import org.mitre.synthea.world.concepts.HealthRecord;
 import org.mitre.synthea.world.concepts.HealthRecord.Code;
 import org.mitre.synthea.world.concepts.HealthRecord.Encounter;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
 import org.mitre.synthea.world.concepts.VitalSign;
+import org.mitre.synthea.world.geography.Location;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
 
@@ -85,12 +87,10 @@ public class StateTest {
     long birthTime = time - Utilities.convertTime("years", age);
     person.attributes.put(Person.BIRTHDATE, birthTime);
 
-    Payer.loadNoInsurance();
-    for (int i = 0; i < age; i++) {
-      long yearTime = time - Utilities.convertTime("years", i);
-      person.coverage.setPayerAtTime(yearTime, Payer.noInsurance);
-    }
-
+    String testStateDefault = Config.get("test_state.default", "Massachusetts");
+    PayerManager.loadPayers(new Location(testStateDefault, null));
+    person.coverage.setPlanToNoInsurance((long) person.attributes.get(Person.BIRTHDATE));
+    person.coverage.setPlanToNoInsurance(time + Utilities.convertTime("years", 20));
     // Ensure Physiology state is enabled by default
     physStateEnabled = State.ENABLE_PHYSIOLOGY_STATE;
     State.ENABLE_PHYSIOLOGY_STATE = true;
@@ -104,8 +104,14 @@ public class StateTest {
     State.ENABLE_PHYSIOLOGY_STATE = physStateEnabled;
   }
 
-  private void simulateWellnessEncounter(Module module) {
-    person.attributes.put(EncounterModule.ACTIVE_WELLNESS_ENCOUNTER + " " + module.name, true);
+  private void simulateWellnessEncounter(Module module, Person person, long time) {
+    // "true" indicates that we are in a wellness encounter (true)
+    person.attributes.put(EncounterModule.ACTIVE_WELLNESS_ENCOUNTER, true);
+    // "false" indicates that the module has not used its "pass" yet
+    person.attributes.put(EncounterModule.ACTIVE_WELLNESS_ENCOUNTER + " " + module.name, false);
+    EncounterModule.createEncounter(person, time, EncounterType.WELLNESS,
+        ClinicianSpecialty.GENERAL_PRACTICE,
+        EncounterModule.ENCOUNTER_CHECKUP, EncounterModule.NAME);
   }
 
   @Test
@@ -152,20 +158,20 @@ public class StateTest {
 
     State counter = module.getState("Counter");
     assertTrue(counter.process(person, time));
-    assertEquals(1, person.attributes.get("loop_index"));
+    assertEquals(1.0, person.attributes.get("loop_index"));
 
     assertTrue(counter.process(person, time));
-    assertEquals(2, person.attributes.get("loop_index"));
+    assertEquals(2.0, person.attributes.get("loop_index"));
 
     assertTrue(counter.process(person, time));
-    assertEquals(3, person.attributes.get("loop_index"));
+    assertEquals(3.0, person.attributes.get("loop_index"));
 
     State decrement = module.getState("Counter_Decrement_by_2");
     assertTrue(decrement.process(person, time));
-    assertEquals(1, person.attributes.get("loop_index"));
+    assertEquals(1.0, person.attributes.get("loop_index"));
 
     assertTrue(decrement.process(person, time));
-    assertEquals(-1, person.attributes.get("loop_index"));
+    assertEquals(-1.0, person.attributes.get("loop_index"));
   }
 
   @Test
@@ -179,7 +185,7 @@ public class StateTest {
     // Should pass through this state immediately without calling the record
     assertTrue(condition.process(person, time));
 
-    verifyZeroInteractions(person.record);
+    verifyNoInteractions(person.record);
   }
 
   @Test
@@ -193,6 +199,8 @@ public class StateTest {
         module.name, conditionDisplay
     );
     assertTrue(onsetTime != null);
+    // Ensure that it ignores the blank assign_to_attribute
+    assertNull(person.attributes.get(""));
     assertEquals(time, onsetTime.longValue());
   }
 
@@ -214,7 +222,7 @@ public class StateTest {
     Encounter enc = person.record.encounters.get(0);
     Code code = enc.codes.get(0);
     assertEquals("50849002", code.code);
-    assertEquals("Emergency Room Admission", code.display);
+    assertEquals("Emergency room admission (procedure)", code.display);
     assertEquals(1, enc.conditions.size());
     code = enc.conditions.get(0).codes.get(0);
     assertEquals("73211009", code.code);
@@ -243,7 +251,7 @@ public class StateTest {
     Encounter enc = person.record.encounters.get(0);
     Code code = enc.codes.get(0);
     assertEquals("50849002", code.code);
-    assertEquals("Emergency Room Admission", code.display);
+    assertEquals("Emergency room admission (procedure)", code.display);
     assertEquals(1, enc.conditions.size());
     code = enc.conditions.get(0).codes.get(0);
     assertEquals("47693006", code.code);
@@ -252,6 +260,7 @@ public class StateTest {
         module.name, code.display
     );
     assertTrue(onsetTime != null);
+    assertNotNull(person.attributes.get("Most Recent ED Visit"));
     assertEquals(time, onsetTime.longValue());
   }
 
@@ -299,7 +308,7 @@ public class StateTest {
     // Should pass through this state immediately without calling the record
     assertTrue(allergy.process(person, time));
 
-    verifyZeroInteractions(person.record);
+    verifyNoInteractions(person.record);
   }
 
   @Test
@@ -543,7 +552,7 @@ public class StateTest {
     assertTrue(person.getVitalSign(VitalSign.SYSTOLIC_BLOOD_PRESSURE, time) >= 110);
     assertTrue(person.getVitalSign(VitalSign.SYSTOLIC_BLOOD_PRESSURE, time) <= 130);
 
-    verifyZeroInteractions(person.record);
+    verifyNoInteractions(person.record);
   }
 
 
@@ -560,7 +569,7 @@ public class StateTest {
 
     assertEquals(120.0, person.getVitalSign(VitalSign.SYSTOLIC_BLOOD_PRESSURE, time), 0.0);
 
-    verifyZeroInteractions(person.record);
+    verifyNoInteractions(person.record);
   }
 
   @Test
@@ -836,7 +845,7 @@ public class StateTest {
     HealthRecord.Observation sampleObservation = person.record.encounters.get(0)
         .observations.get(2);
     assertEquals("procedure", sampleObservation.category);
-    assertEquals("mmHg", sampleObservation.unit);
+    assertEquals("mm[Hg]", sampleObservation.unit);
     assertTrue(sampleObservation.value instanceof SampledData);
     SampledData sampledData = (SampledData) sampleObservation.value;
     assertEquals("P_ao", sampledData.attributes.get(0));
@@ -930,7 +939,7 @@ public class StateTest {
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("weeks", 2);
 
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
 
     // Now we should pass through
     assertTrue(encounter.process(person, time));
@@ -949,7 +958,7 @@ public class StateTest {
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
 
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
 
     assertTrue(encounter.process(person, time));
 
@@ -981,7 +990,7 @@ public class StateTest {
 
     Code code = enc.codes.get(0);
     assertEquals("50849002", code.code);
-    assertEquals("Emergency Room Admission", code.display);
+    assertEquals("Emergency room admission (procedure)", code.display);
   }
 
   @Test
@@ -1005,7 +1014,7 @@ public class StateTest {
 
     Code code = enc.codes.get(0);
     assertEquals("50849002", code.code);
-    assertEquals("Emergency Room Admission", code.display);
+    assertEquals("Emergency room admission (procedure)", code.display);
   }
 
   @Test
@@ -1080,7 +1089,7 @@ public class StateTest {
     time = time + Utilities.convertTime("months", 6);
     // Simulate the wellness encounter by calling perform_encounter
 
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1108,7 +1117,7 @@ public class StateTest {
     State encounter = module.getState("DiagnosisEncounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1150,7 +1159,7 @@ public class StateTest {
     time = time + Utilities.convertTime("months", 6);
     // Simulate the wellness encounter by calling perform_encounter
 
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1187,7 +1196,7 @@ public class StateTest {
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
     // Simulate the wellness encounter by calling perform_encounter
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1223,7 +1232,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1259,7 +1268,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1297,7 +1306,7 @@ public class StateTest {
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
 
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1326,7 +1335,7 @@ public class StateTest {
     person.attributes.remove("Diabetes Medication");
     Module module = TestHelper.getFixture("medication_order.json");
     State encounter = module.getState("Wellness_Encounter");
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1336,6 +1345,7 @@ public class StateTest {
     HealthRecord.Medication medication = (HealthRecord.Medication) person.attributes
         .get("Diabetes Medication");
     assertTrue(medication.administration);
+    assertTrue(medication.stop != 0L);
   }
 
   @Test
@@ -1343,7 +1353,7 @@ public class StateTest {
     person.attributes.remove("Diabetes Medication");
     Module module = TestHelper.getFixture("medication_order.json");
     State encounter = module.getState("Wellness_Encounter");
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1375,7 +1385,7 @@ public class StateTest {
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
 
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1416,7 +1426,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1457,7 +1467,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1498,7 +1508,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1527,7 +1537,7 @@ public class StateTest {
     person.attributes.remove("Diabetes_CarePlan");
     Module module = TestHelper.getFixture("careplan_start.json");
     State encounter = module.getState("Wellness_Encounter");
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1556,7 +1566,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1603,7 +1613,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     person.history.add(encounter);
 
     // Now process the careplan
@@ -1649,7 +1659,7 @@ public class StateTest {
     State encounter = module.getState("Wellness_Encounter");
     assertFalse(encounter.process(person, time));
     time = time + Utilities.convertTime("months", 6);
-    simulateWellnessEncounter(module);
+    simulateWellnessEncounter(module, person, time);
     assertTrue(encounter.process(person, time));
     person.history.add(encounter);
 
@@ -1885,7 +1895,9 @@ public class StateTest {
             Whitebox.<Map<String, Module.ModuleSupplier>>getInternalState(Module.class, "modules");
     // hack to load these test modules so they can be called by the CallSubmodule state
     Module subModule1 = TestHelper.getFixture("submodules/encounter_submodule.json");
+    subModule1.submodule = true;
     Module subModule2 = TestHelper.getFixture("submodules/medication_submodule.json");
+    subModule2.submodule = true;
     modules.put("submodules/encounter_submodule", new Module.ModuleSupplier(subModule1));
     modules.put("submodules/medication_submodule", new Module.ModuleSupplier(subModule2));
 
@@ -1918,7 +1930,7 @@ public class StateTest {
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Initial", person.history.get(14).name);
-      assertEquals("Encounter Submodule Module", person.history.get(14).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(14).module.submoduleName);
       // the state being called by the submodule won't necessarily have this property
       // because submodule.exited gets rewritten to whenever the terminal of the submodule exits
       // ex. main.CallSubmodule: entered 1/1/2020, exited 12/31/2020
@@ -1930,58 +1942,58 @@ public class StateTest {
       // assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Delay", person.history.get(13).name);
-      assertEquals("Encounter Submodule Module", person.history.get(13).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(13).module.submoduleName);
       previousStateExited = person.history.get(14).exited;
       currentStateEntered = person.history.get(13).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Encounter_In_Submodule", person.history.get(12).name);
-      assertEquals("Encounter Submodule Module", person.history.get(12).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(12).module.submoduleName);
       previousStateExited = person.history.get(13).exited;
       currentStateEntered = person.history.get(12).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Call_MedicationOrder_Submodule", person.history.get(11).name);
-      assertEquals("Encounter Submodule Module", person.history.get(11).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(11).module.submoduleName);
       previousStateExited = person.history.get(12).exited;
       currentStateEntered = person.history.get(11).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
 
       assertEquals("Initial", person.history.get(10).name);
-      assertEquals("Medication Submodule Module", person.history.get(10).module.name);
+      assertEquals("Medication Submodule Module", person.history.get(10).module.submoduleName);
       // previousStateExited = person.history.get(11).exited;
       // currentStateEntered = person.history.get(10).entered;
       // assertEquals(previousStateExited, currentStateEntered);
       // see notes above for why this property doesn't hold
 
       assertEquals("Examplitis_Medication", person.history.get(9).name);
-      assertEquals("Medication Submodule Module", person.history.get(9).module.name);
+      assertEquals("Medication Submodule Module", person.history.get(9).module.submoduleName);
       previousStateExited = person.history.get(10).exited;
       currentStateEntered = person.history.get(9).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Delay_Yet_Again", person.history.get(8).name);
-      assertEquals("Medication Submodule Module", person.history.get(8).module.name);
+      assertEquals("Medication Submodule Module", person.history.get(8).module.submoduleName);
       previousStateExited = person.history.get(9).exited;
       currentStateEntered = person.history.get(8).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("End_Medication", person.history.get(7).name);
-      assertEquals("Medication Submodule Module", person.history.get(7).module.name);
+      assertEquals("Medication Submodule Module", person.history.get(7).module.submoduleName);
       previousStateExited = person.history.get(8).exited;
       currentStateEntered = person.history.get(7).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Med_Terminal", person.history.get(6).name);
-      assertEquals("Medication Submodule Module", person.history.get(6).module.name);
+      assertEquals("Medication Submodule Module", person.history.get(6).module.submoduleName);
       previousStateExited = person.history.get(7).exited;
       currentStateEntered = person.history.get(6).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
 
       assertEquals("Call_MedicationOrder_Submodule", person.history.get(5).name);
-      assertEquals("Encounter Submodule Module", person.history.get(5).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(5).module.submoduleName);
       // previousStateExited = person.history.get(6).exited;
       // currentStateEntered = person.history.get(5).entered;
       // assertEquals(previousStateExited, currentStateEntered);
@@ -1991,13 +2003,13 @@ public class StateTest {
       // but the entered & exited times don't line up cleanly
 
       assertEquals("Delay_Some_More", person.history.get(4).name);
-      assertEquals("Encounter Submodule Module", person.history.get(4).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(4).module.submoduleName);
       previousStateExited = person.history.get(5).exited;
       currentStateEntered = person.history.get(4).entered;
       assertEquals(previousStateExited, currentStateEntered);
 
       assertEquals("Encounter_Terminal", person.history.get(3).name);
-      assertEquals("Encounter Submodule Module", person.history.get(3).module.name);
+      assertEquals("Encounter Submodule Module", person.history.get(3).module.submoduleName);
       previousStateExited = person.history.get(4).exited;
       currentStateEntered = person.history.get(3).entered;
       assertEquals(previousStateExited, currentStateEntered);
@@ -2035,6 +2047,7 @@ public class StateTest {
         Whitebox.<Map<String, Module.ModuleSupplier>>getInternalState(Module.class, "modules");
     // hack to load these test modules so they can be called by the CallSubmodule state
     Module subModule = TestHelper.getFixture("submodules/admission.json");
+    subModule.submodule = true;
     modules.put("submodules/admission", new Module.ModuleSupplier(subModule));
 
     try {
@@ -2087,6 +2100,56 @@ public class StateTest {
       assertEquals(codes[i], o.codes.get(0).code);
       assertEquals(report, o.report);
     }
+  }
+
+  @Test
+  public void testDiagnosticReportNotDuplicatedInSameEncounter() throws Exception {
+    // https://github.com/synthetichealth/synthea/issues/1552
+    // When two modules record the same lab panel during one encounter (for example the
+    // Veteran Hyperlipidemia initial workup joining a wellness encounter), the panel must
+    // only be recorded once -- downstream systems reject duplicate panels.
+    // Birth makes the vital signs come alive :-)
+    LifecycleModule.birth(person, (long)person.attributes.get(Person.BIRTHDATE));
+
+    Module module = TestHelper.getFixture("observation_groups.json");
+
+    State metabolicPanel = module.getState("Record_MetabolicPanel");
+    assertTrue(metabolicPanel.process(person, time));
+
+    Encounter encounter = person.record.encounters.get(0);
+    assertEquals(1, encounter.reports.size());
+
+    // a second module recording the same panel in the same encounter is skipped,
+    // including its observations
+    State duplicatePanel = module.getState("Record_MetabolicPanel");
+    assertTrue(duplicatePanel.process(person, time));
+    assertEquals(1, encounter.reports.size());
+    assertEquals(8, encounter.observations.size());
+
+    // a different panel in the same encounter is still recorded
+    State lipidPanel = module.getState("Record_LipidPanel");
+    assertTrue(lipidPanel.process(person, time));
+    assertEquals(2, encounter.reports.size());
+
+    // the dedup is scoped to the same instant, not the whole encounter: the same
+    // panel recorded again later in the encounter (e.g. daily labs during an
+    // inpatient stay) is kept
+    long nextDay = time + Utilities.convertTime("days", 1);
+    int reportsBefore = encounter.reports.size();
+    int observationsBefore = encounter.observations.size();
+    State panelNextDay = module.getState("Record_MetabolicPanel");
+    assertTrue(panelNextDay.process(person, nextDay));
+    assertEquals(reportsBefore + 1, encounter.reports.size());
+    assertEquals(observationsBefore + 8, encounter.observations.size());
+
+    // the dedup is also scoped to a single encounter: the same panel in a later
+    // encounter is recorded again
+    long laterTime = time + Utilities.convertTime("years", 1);
+    person.record.encounterEnd(time, EncounterType.WELLNESS);
+    person.record.encounterStart(laterTime, EncounterType.WELLNESS);
+    State panelNextEncounter = module.getState("Record_MetabolicPanel");
+    assertTrue(panelNextEncounter.process(person, laterTime));
+    assertEquals(1, person.record.encounters.get(1).reports.size());
   }
 
   @Test
@@ -2162,7 +2225,7 @@ public class StateTest {
 
     // Run the whole module against the Person
     try {
-      module.process(person, 0L);
+      module.process(person, time);
       fail("Expected a RuntimeException to be thrown");
     } catch (RuntimeException ex) {
       // The module doesn't set "Arterial Pressure Values" when Physiology states
@@ -2213,7 +2276,7 @@ public class StateTest {
     State deviceState = module.getState("Artificial_Heart");
     assertTrue(deviceState.process(person, time));
 
-    Encounter encounter = person.getCurrentEncounter(module);
+    Encounter encounter = person.record.currentEncounter(time);
     List<HealthRecord.Device> devices = encounter.devices;
     assertNotNull(devices);
     assertEquals(1, devices.size());
@@ -2242,7 +2305,7 @@ public class StateTest {
     State deviceEndState = module.getState("Remove_Device_By_Attribute");
     assertTrue(deviceEndState.process(person, time));
 
-    Encounter encounter = person.getCurrentEncounter(module);
+    Encounter encounter = person.record.currentEncounter(time);
     List<HealthRecord.Device> devices = encounter.devices;
     HealthRecord.Device device = devices.get(0);
     assertEquals(time, device.stop);
@@ -2261,7 +2324,7 @@ public class StateTest {
     State deviceEndState = module.getState("Remove_Device_By_Code");
     assertTrue(deviceEndState.process(person, time));
 
-    Encounter encounter = person.getCurrentEncounter(module);
+    Encounter encounter = person.record.currentEncounter(time);
     List<HealthRecord.Device> devices = encounter.devices;
     HealthRecord.Device device = devices.get(0);
     assertEquals(time, device.stop);
@@ -2281,12 +2344,11 @@ public class StateTest {
     State deviceEndState = module.getState("Remove_Device_By_State");
     assertTrue(deviceEndState.process(person, time));
 
-    Encounter encounter = person.getCurrentEncounter(module);
+    Encounter encounter = person.record.currentEncounter(time);
     List<HealthRecord.Device> devices = encounter.devices;
     HealthRecord.Device device = devices.get(0);
     assertEquals(time, device.stop);
   }
-
 
   @Test
   public void testSupplyList() throws Exception {
@@ -2298,7 +2360,7 @@ public class StateTest {
     State supplyListState = module.getState("Necessary_Supplies");
     assertTrue(supplyListState.process(person, time));
 
-    Encounter encounter = person.getCurrentEncounter(module);
+    Encounter encounter = person.record.currentEncounter(time);
     List<HealthRecord.Supply> supplies = encounter.supplies;
     assertNotNull(supplies);
     assertEquals(4, supplies.size());
@@ -2315,6 +2377,32 @@ public class StateTest {
       assertEquals(expectedCodes[i], code.code);
       assertEquals(expectedDisplays[i], code.display);
       assertEquals(expectedQuantities[i], supply.quantity);
+    }
+  }
+
+  @Test
+  public void testVaccine() throws Exception {
+    Module module = TestHelper.getFixture("vaccine.json");
+
+    State encounterState = module.getState("Encounter");
+    assertTrue(encounterState.process(person, time));
+
+    State supplyListState = module.getState("Vaccine");
+    assertTrue(supplyListState.process(person, time));
+
+    Encounter encounter = person.record.currentEncounter(time);
+    List<HealthRecord.Immunization> vaccines = encounter.immunizations;
+    assertNotNull(vaccines);
+    assertEquals(1, vaccines.size());
+
+    String[] expectedCodes = { "123" };
+    String[] expectedDisplays = { "CVX Vaccine Code" };
+
+    for (int i = 0; i < vaccines.size(); i++) {
+      HealthRecord.Immunization vaccine = vaccines.get(i);
+      Code code = vaccine.codes.get(0);
+      assertEquals(expectedCodes[i], code.code);
+      assertEquals(expectedDisplays[i], code.display);
     }
   }
 }

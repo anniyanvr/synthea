@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.mitre.synthea.engine.Module;
+import org.mitre.synthea.export.rif.identifiers.Passport;
 import org.mitre.synthea.helpers.Attributes;
 import org.mitre.synthea.helpers.Attributes.Inventory;
 import org.mitre.synthea.helpers.Config;
@@ -18,13 +19,13 @@ import org.mitre.synthea.helpers.RandomCollection;
 import org.mitre.synthea.helpers.SimpleCSV;
 import org.mitre.synthea.helpers.TrendingValueGenerator;
 import org.mitre.synthea.helpers.Utilities;
-import org.mitre.synthea.input.FixedRecord;
-import org.mitre.synthea.input.FixedRecordGroup;
 import org.mitre.synthea.modules.BloodPressureValueGenerator.SysDias;
 import org.mitre.synthea.world.agents.Person;
+import org.mitre.synthea.world.agents.behaviors.planeligibility.QualifyingConditionCodesEligibility;
 import org.mitre.synthea.world.concepts.BMI;
 import org.mitre.synthea.world.concepts.BiometricsConfig;
 import org.mitre.synthea.world.concepts.BirthStatistics;
+import org.mitre.synthea.world.concepts.Employment;
 import org.mitre.synthea.world.concepts.GrowthChart;
 import org.mitre.synthea.world.concepts.GrowthChartEntry;
 import org.mitre.synthea.world.concepts.HealthRecord.Code;
@@ -36,24 +37,40 @@ import org.mitre.synthea.world.concepts.PediatricGrowthTrajectory;
 import org.mitre.synthea.world.concepts.VitalSign;
 import org.mitre.synthea.world.geography.Location;
 
+/**
+ * LifecycleModule is responsible for managing the lifecycle of a Person.
+ */
 public final class LifecycleModule extends Module {
   private static final Map<GrowthChart.ChartType, GrowthChart> growthChart =
       GrowthChart.loadCharts();
   private static final List<LinkedHashMap<String, String>> weightForLengthChart =
       loadWeightForLengthChart();
+  private static final QualifyingConditionCodesEligibility disabilityCriteria =
+      loadDisabilityData();
   private static final String AGE = "AGE";
   private static final String AGE_MONTHS = "AGE_MONTHS";
+  /** Attribute key for days until a person will die */
+  public static final String DAYS_UNTIL_DEATH = "days_until_death";
+  /** Attribute key for the probability a person quits smoking per process call*/
   public static final String QUIT_SMOKING_PROBABILITY = "quit smoking probability";
+  /** Attribute key for the age at which the person stopped smoking */
   public static final String QUIT_SMOKING_AGE = "quit smoking age";
+  /** Attribute key for the probability a person stops drinking per process call */
   public static final String QUIT_ALCOHOLISM_PROBABILITY = "quit alcoholism probability";
+  /** Attribute key for the age at which a person quit alcoholism */
   public static final String QUIT_ALCOHOLISM_AGE = "quit alcoholism age";
+  /** Attribute key for a person's probability to follow doctor's orders and recommendations */
   public static final String ADHERENCE_PROBABILITY = "adherence probability";
 
   private static final String COUNTRY_CODE = Config.get("generate.geography.country_code");
+  private static final Double MIDDLE_NAME_PROBABILITY =
+      Config.getAsDouble("generate.middle_names", 0.80);
 
   private static RandomCollection<String> sexualOrientationData = loadSexualOrientationData();
 
-
+  /**
+   * Constructor for LifecycleModule.
+   */
   public LifecycleModule() {
     this.name = "Lifecycle";
   }
@@ -80,6 +97,18 @@ public final class LifecycleModule extends Module {
     return soDistribution;
   }
 
+  private static QualifyingConditionCodesEligibility loadDisabilityData() {
+    QualifyingConditionCodesEligibility criteria = null;
+    String filename = "payers/eligibility_input_files/ssd_eligibility.csv";
+    try {
+      criteria = new QualifyingConditionCodesEligibility(filename);
+    } catch (Exception e) {
+      System.err.println("ERROR: unable to load disability csv: " + filename);
+      e.printStackTrace();
+    }
+    return criteria;
+  }
+
   public Module clone() {
     return this;
   }
@@ -104,6 +133,10 @@ public final class LifecycleModule extends Module {
     adherence(person, time);
     calculateVitalSigns(person, time);
     calculateFallRisk(person, time);
+    person.attributes.put(Person.DISABLED, isDisabled(person, time));
+    if (person.ageInYears(time) >= 18) {
+      ((Employment) person.attributes.get(Person.EMPLOYMENT_MODEL)).checkEmployment(person, time);
+    }
     death(person, time);
 
     // java modules will never "finish"
@@ -119,14 +152,28 @@ public final class LifecycleModule extends Module {
     Map<String, Object> attributes = person.attributes;
 
     attributes.put(Person.ID, person.randUUID().toString());
-    attributes.put(Person.BIRTHDATE, time);
-    String gender = (String) attributes.get(Person.GENDER);
     String language = (String) attributes.get(Person.FIRST_LANGUAGE);
-    String firstName = Names.fakeFirstName(gender, language, person);
-    String lastName = Names.fakeLastName(language, person);
-    attributes.put(Person.FIRST_NAME, firstName);
-    attributes.put(Person.LAST_NAME, lastName);
-    attributes.put(Person.NAME, firstName + " " + lastName);
+    String gender = (String) attributes.get(Person.GENDER);
+    if (attributes.get(Person.ENTITY) == null) {
+      attributes.put(Person.BIRTHDATE, time);
+      String firstName = Names.fakeFirstName(gender, language, person);
+      String lastName = Names.fakeLastName(language, person);
+      attributes.put(Person.FIRST_NAME, firstName);
+      String middleName = null;
+      if (person.rand() <= MIDDLE_NAME_PROBABILITY) {
+        middleName = Names.fakeFirstName(gender, language, person);
+        attributes.put(Person.MIDDLE_NAME, middleName);
+      }
+      attributes.put(Person.LAST_NAME, lastName);
+      attributes.put(Person.NAME, firstName + " " + lastName);
+
+      String phoneNumber = "555-" + ((person.randInt(999 - 100 + 1) + 100)) + "-"
+          + ((person.randInt(9999 - 1000 + 1) + 1000));
+      attributes.put(Person.TELECOM, phoneNumber);
+
+      boolean hasStreetAddress2 = person.rand() < 0.5;
+      attributes.put(Person.ADDRESS, Names.fakeAddress(hasStreetAddress2, person));
+    }
 
     String motherFirstName = Names.fakeFirstName("F", language, person);
     String motherLastName = Names.fakeLastName(language, person);
@@ -134,26 +181,12 @@ public final class LifecycleModule extends Module {
 
     String fatherFirstName = Names.fakeFirstName("M", language, person);
     // this is anglocentric where the baby gets the father's last name
-    attributes.put(Person.NAME_FATHER, fatherFirstName + " " + lastName);
+    attributes.put(Person.NAME_FATHER, fatherFirstName + " " + attributes.get(Person.LAST_NAME));
 
     double prevalenceOfTwins =
         (double) BiometricsConfig.get("lifecycle.prevalence_of_twins", 0.02);
     if ((person.rand() < prevalenceOfTwins)) {
       attributes.put(Person.MULTIPLE_BIRTH_STATUS, person.randInt(3) + 1);
-    }
-
-    String phoneNumber = "555-" + ((person.randInt(999 - 100 + 1) + 100)) + "-"
-        + ((person.randInt(9999 - 1000 + 1) + 1000));
-    attributes.put(Person.TELECOM, phoneNumber);
-
-    boolean hasStreetAddress2 = person.rand() < 0.5;
-    attributes.put(Person.ADDRESS, Names.fakeAddress(hasStreetAddress2, person));
-
-    // If using FixedRecords, overwrite the person's attributes with the FixedRecord attributes.
-    if (person.attributes.get(Person.RECORD_GROUP) != null) {
-      FixedRecordGroup recordGroup = (FixedRecordGroup) person.attributes.get(Person.RECORD_GROUP);
-      FixedRecord fr = recordGroup.records.get(0);
-      attributes.putAll(fr.getFixedRecordAttributes());
     }
 
     String ssn = "999-" + ((person.randInt(99 - 10 + 1) + 10)) + "-"
@@ -163,9 +196,11 @@ public final class LifecycleModule extends Module {
     String city = (String) attributes.get(Person.CITY);
     Location location = (Location) attributes.get(Person.LOCATION);
     if (location != null) {
-      // should never happen in practice, but can happen in unit tests
+      // A null location should never happen in practice, but can happen in unit tests
       location.assignPoint(person, city);
-      person.attributes.put(Person.ZIP, location.getZipCode(city, person));
+      String zipCode = location.getZipCode(city, person);
+      person.attributes.put(Person.ZIP, zipCode);
+      person.attributes.put(Person.FIPS, Location.getFipsCodeByZipCode(zipCode));
       String[] birthPlace;
       if ("english".equalsIgnoreCase((String) attributes.get(Person.FIRST_LANGUAGE))) {
         birthPlace = location.randomBirthPlace(person);
@@ -183,10 +218,20 @@ public final class LifecycleModule extends Module {
     attributes.put(Person.ACTIVE_WEIGHT_MANAGEMENT, false);
     // TODO: Why are the percentiles a vital sign? Sounds more like an attribute?
     double heightPercentile = person.rand();
-    PediatricGrowthTrajectory pgt = new PediatricGrowthTrajectory(person.seed, time);
+    PediatricGrowthTrajectory pgt = new PediatricGrowthTrajectory(person.getSeed(), time, gender);
     double weightPercentile = pgt.reverseWeightPercentile(gender, heightPercentile);
+    // make the head percentile within 5% of the height percentile
+    double headPercentile = heightPercentile + person.rand(0.025, 0.025);
+    if (headPercentile < 0.01) {
+      headPercentile = 0.01;
+    } else if (headPercentile > 1) {
+      headPercentile = 1.0;
+    }
+    // Convert and store as percentage (0 to 100%) because it is recorded in an Observation.
+    headPercentile = (100.0 * headPercentile);
     person.setVitalSign(VitalSign.HEIGHT_PERCENTILE, heightPercentile);
     person.setVitalSign(VitalSign.WEIGHT_PERCENTILE, weightPercentile);
+    person.setVitalSign(VitalSign.HEAD_PERCENTILE, headPercentile);
     person.attributes.put(Person.GROWTH_TRAJECTORY, pgt);
 
     // Temporarily generate a mother
@@ -210,8 +255,7 @@ public final class LifecycleModule extends Module {
     boolean isRHNeg = person.rand() < 0.15;
     attributes.put("RH_NEG", isRHNeg);
 
-    double adherenceBaseline = Double
-        .parseDouble(Config.get("lifecycle.adherence.baseline", ".05"));
+    double adherenceBaseline = Config.getAsDouble("lifecycle.adherence.baseline", 0.05);
     person.attributes.put(ADHERENCE_PROBABILITY, adherenceBaseline);
 
     grow(person, time); // set initial height and weight from percentiles
@@ -282,7 +326,8 @@ public final class LifecycleModule extends Module {
         if (person.attributes.get(Person.IDENTIFIER_PASSPORT) == null) {
           Boolean getsPassport = (person.rand() < 0.5);
           if (getsPassport) {
-            String identifierPassport = "X" + (person.randInt(99999999 - 10000000 + 1) + "X");
+            int randomValue = person.randInt((int) Passport.MAX_PASSPORT + 1);
+            String identifierPassport = new Passport(randomValue).toString();
             person.attributes.put(Person.IDENTIFIER_PASSPORT, identifierPassport);
           }
         }
@@ -297,7 +342,7 @@ public final class LifecycleModule extends Module {
           }
         }
         break;
-      case 27:
+      case 28:
         // get married
         if (person.attributes.get(Person.MARITAL_STATUS) == null) {
           Boolean getsMarried = (person.rand() < 0.8);
@@ -307,10 +352,19 @@ public final class LifecycleModule extends Module {
               person.attributes.put(Person.NAME_PREFIX, "Mrs.");
               person.attributes.put(Person.MAIDEN_NAME, person.attributes.get(Person.LAST_NAME));
               String firstName = ((String) person.attributes.get(Person.FIRST_NAME));
+              String middleName = null;
+              if (person.attributes.containsKey(Person.MIDDLE_NAME)) {
+                middleName = (String) person.attributes.get(Person.MIDDLE_NAME);
+              }
               String language = (String) person.attributes.get(Person.FIRST_LANGUAGE);
               String newLastName = Names.fakeLastName(language, person);
               person.attributes.put(Person.LAST_NAME, newLastName);
-              person.attributes.put(Person.NAME, firstName + " " + newLastName);
+              if (middleName != null) {
+                person.attributes.put(Person.NAME,
+                    firstName + " " + middleName + " " + newLastName);
+              } else {
+                person.attributes.put(Person.NAME, firstName + " " + newLastName);
+              }
             }
           } else {
             person.attributes.put(Person.MARITAL_STATUS, "S");
@@ -324,6 +378,60 @@ public final class LifecycleModule extends Module {
           List<String> suffixList = Arrays.asList("PhD", "JD", "MD");
           person.attributes.put(Person.NAME_SUFFIX,
               suffixList.get(person.randInt(suffixList.size())));
+        }
+        break;
+      case 35:
+        if (person.attributes.get(Person.MARITAL_STATUS + "Decade3") == null) {
+          // divorce and widowing...
+          // gross approximations for next 10 years based on:
+          // https://www.census.gov/content/dam/Census/library/publications/2021/demo/p70-167.pdf
+          if (person.attributes.get(Person.MARITAL_STATUS).equals("M")) {
+            double check = person.rand();
+            if (check < 0.02) {
+              // widow
+              person.attributes.put(Person.MARITAL_STATUS, "W");
+            } else if (check < 0.20) {
+              // divorce
+              person.attributes.put(Person.MARITAL_STATUS, "D");
+            }
+          }
+          person.attributes.put(Person.MARITAL_STATUS + "Decade3", true);
+        }
+        break;
+      case 45:
+        if (person.attributes.get(Person.MARITAL_STATUS + "Decade4") == null) {
+          // divorce and widowing...
+          // gross approximations for next 10 years based on:
+          // https://www.census.gov/content/dam/Census/library/publications/2021/demo/p70-167.pdf
+          if (person.attributes.get(Person.MARITAL_STATUS).equals("M")) {
+            double check = person.rand();
+            if (check < 0.03) {
+              // widow
+              person.attributes.put(Person.MARITAL_STATUS, "W");
+            } else if (check < 0.05) {
+              // divorce
+              person.attributes.put(Person.MARITAL_STATUS, "D");
+            }
+          }
+          person.attributes.put(Person.MARITAL_STATUS + "Decade4", true);
+        }
+        break;
+      case 55:
+        if (person.attributes.get(Person.MARITAL_STATUS + "Decade5") == null) {
+          // divorce and widowing...
+          // gross approximations for next 10 years based on:
+          // https://www.census.gov/content/dam/Census/library/publications/2021/demo/p70-167.pdf
+          if (person.attributes.get(Person.MARITAL_STATUS).equals("M")) {
+            double check = person.rand();
+            if (check < 0.06) {
+              // widow
+              person.attributes.put(Person.MARITAL_STATUS, "W");
+            } else if (check < 0.11) {
+              // divorce
+              person.attributes.put(Person.MARITAL_STATUS, "D");
+            }
+          }
+          person.attributes.put(Person.MARITAL_STATUS + "Decade5", true);
         }
         break;
       default:
@@ -397,7 +505,7 @@ public final class LifecycleModule extends Module {
     String gender = (String) person.attributes.get(Person.GENDER);
     int ageInMonths = person.ageInMonths(time);
     return lookupGrowthChart("head", gender, ageInMonths,
-        person.getVitalSign(VitalSign.HEIGHT_PERCENTILE, time));
+        (person.getVitalSign(VitalSign.HEAD_PERCENTILE, time) / 100.0));
   }
 
   private static double adjustWeight(Person person, long time) {
@@ -431,6 +539,18 @@ public final class LifecycleModule extends Module {
           double geriatricWeightLoss = person.rand(GERIATRIC_WEIGHT_LOSS_RANGE);
           weight -= geriatricWeightLoss;
         }
+      }
+      // If the person needs to gain weight that's been triggered by a module:
+      Object kgToGain = person.attributes.get(Person.KILOGRAMS_TO_GAIN);
+      if (kgToGain != null && ((double) kgToGain) > 0.0) {
+        // We'll reuse the same adult weight gain used for standard adult weight gain.
+        // This will result in about double weight gained per year until target kilograms to gain
+        // has been reached.
+        double adultWeightGain = person.rand(ADULT_WEIGHT_GAIN_RANGE);
+        weight += adultWeightGain;
+        // Update the weight they have yet to gain.
+        double remainingKgToGain = ((double) kgToGain) - adultWeightGain;
+        person.attributes.put(Person.KILOGRAMS_TO_GAIN, remainingKgToGain);
       }
     }
     return weight;
@@ -614,9 +734,62 @@ public final class LifecycleModule extends Module {
       index = (Integer) person.attributes.getOrDefault("diabetes_severity", 1);
     }
 
-    double totalCholesterol = person.rand(CHOLESTEROL_RANGE[index], CHOLESTEROL_RANGE[index + 1]);
+    double totalCholesterol;
     double triglycerides = person.rand(TRIGLYCERIDES_RANGE[index], TRIGLYCERIDES_RANGE[index + 1]);
-    double hdl = person.rand(HDL_RANGE[index], HDL_RANGE[index + 1]);
+    double hdl;
+
+    if (index == 0) {
+      // for patients without diabetes
+      // source for the below: https://www.cdc.gov/nchs/data/databriefs/db363-h.pdf
+      // NCHS Data Brief - No. 363 - April 2020
+      // Total and High-density Lipoprotein Cholesterol in Adults: United States, 2015-2018
+      boolean lowHDL;
+      boolean highTotalChol;
+      if (person.attributes.containsKey("low_hdl")) {
+        // cache low or high status, so it's consistent
+        lowHDL = (boolean)person.attributes.get("low_hdl");
+        highTotalChol = (boolean)person.attributes.get("high_total_chol");
+      } else {
+        boolean female = "F".equals(person.attributes.get(Person.GENDER));
+
+        // gender is the largest factor, much more than age or race/ethnicity
+        // from the above source ("Key findings" section):
+        //  "Over one-quarter of men (26.6%) and 8.5% of women
+        //   had low high-density lipoprotein cholesterol (HDL-C)."
+        double chanceOfLowHDL = female ? .085 : .266;
+
+        lowHDL = person.rand() < chanceOfLowHDL;
+
+        person.attributes.put("low_hdl", lowHDL);
+
+        // from the above source:
+        //  "During 2015-2018, 11.4% of adults had high total cholesterol,
+        //   and prevalence was similar by race and Hispanic origin."
+        highTotalChol = person.rand() < .114;
+        person.attributes.put("high_total_chol", highTotalChol);
+      }
+
+      // normal distribution: sd * randGaussian() + mean
+      // these numbers do not come from any formal source
+      // but are intended to generate a normal rather than uniform distribution
+      if (lowHDL) {
+        // low HDL is defined as < 40
+        hdl = 3 * person.randGaussian() + 30;
+      } else {
+        hdl = 5 * person.randGaussian() + 55;
+      }
+
+      if (highTotalChol) {
+        // high is 240 or more
+        totalCholesterol = 20 * person.randGaussian() + 280;
+      } else {
+        totalCholesterol = 30 * person.randGaussian() + 170;
+      }
+    } else {
+      totalCholesterol = person.rand(CHOLESTEROL_RANGE[index], CHOLESTEROL_RANGE[index + 1]);
+      hdl = person.rand(HDL_RANGE[index], HDL_RANGE[index + 1]);
+    }
+
     double ldl = totalCholesterol - hdl - (0.2 * triglycerides);
 
     person.setVitalSign(VitalSign.TOTAL_CHOLESTEROL, totalCholesterol);
@@ -773,21 +946,39 @@ public final class LifecycleModule extends Module {
     }
   }
 
+  /**
+   * Enables death by natural causes.
+   */
   protected static boolean ENABLE_DEATH_BY_NATURAL_CAUSES =
       Config.getAsBoolean("lifecycle.death_by_natural_causes");
+
+  /**
+   * Enables death by loss of care.
+   */
   protected static boolean ENABLE_DEATH_BY_LOSS_OF_CARE =
       Config.getAsBoolean("lifecycle.death_by_loss_of_care");
-  protected static boolean ENABLE_PHYSIOLOGY_GENERATORS =
+
+  /**
+   * Enables physiology generators.
+   */
+  public static boolean ENABLE_PHYSIOLOGY_GENERATORS =
       Config.getAsBoolean("physiology.generators.enabled", false);
 
-  // Death From Natural Causes SNOMED Code
+  /** Death From Natural Causes SNOMED Code */
   private static final Code NATURAL_CAUSES = new Code("SNOMED-CT", "9855000",
       "Natural death with unknown cause");
-  // Death From Lack of Treatment SNOMED Code (Due to a Payer not covering treatment)
-  // Note: This SNOMED Code (397709008) is just for death - not death from lack of treatment.
+  /** Death From Lack of Treatment SNOMED Code (Due to a Payer not covering treatment)
+    * Note: This SNOMED Code (397709008) is just for death - not death from lack of treatment.
+    */
   public static final Code LOSS_OF_CARE = new Code("SNOMED-CT", "397709008",
       "Death due to Uncovered and Unreceived Treatment");
 
+  /**
+   * Mark a person as dead if they are old enough or if they roll a random number
+   * that is less than the likelihood of death for their age.
+   * @param person the person to check for death.
+   * @param time the time of the simulation
+   */
   protected static void death(Person person, long time) {
     if (ENABLE_DEATH_BY_NATURAL_CAUSES) {
       double roll = person.rand();
@@ -800,8 +991,20 @@ public final class LifecycleModule extends Module {
     if (ENABLE_DEATH_BY_LOSS_OF_CARE && deathFromLossOfCare(person)) {
       person.recordDeath(time, LOSS_OF_CARE);
     }
+
+    if (person.attributes.containsKey(Person.DEATHDATE)) {
+      Long deathDate = (Long) person.attributes.get(Person.DEATHDATE);
+      long diff = deathDate - time;
+      long days = TimeUnit.MILLISECONDS.toDays(diff);
+      person.attributes.put(DAYS_UNTIL_DEATH, Long.valueOf(days));
+    }
   }
 
+  /**
+   * Function that determines the probability of death based on age.
+   * @param age the age of the person in years.
+   * @return the probability of death in the next year.
+   */
   protected static double likelihoodOfDeath(int age) {
     double yearlyRisk;
 
@@ -842,6 +1045,7 @@ public final class LifecycleModule extends Module {
    * necessary treatment.
    *
    * @param person the person to check for loss of care death.
+   * @return true if the person dies from loss of care, false otherwise.
    */
   public static boolean deathFromLossOfCare(Person person) {
     // Search the person's lossOfCareHealthRecord for missed treatments.
@@ -870,8 +1074,7 @@ public final class LifecycleModule extends Module {
       int year = Utilities.getYear(time);
       Boolean smoker = person.rand() < likelihoodOfBeingASmoker(year);
       person.attributes.put(Person.SMOKER, smoker);
-      double quitSmokingBaseline = Double
-          .parseDouble(Config.get("lifecycle.quit_smoking.baseline", "0.01"));
+      double quitSmokingBaseline = Config.getAsDouble("lifecycle.quit_smoking.baseline", 0.01);
       person.attributes.put(LifecycleModule.QUIT_SMOKING_PROBABILITY, quitSmokingBaseline);
     }
   }
@@ -906,8 +1109,8 @@ public final class LifecycleModule extends Module {
       // assume about 8 mil alcoholics/320 mil gen pop
       Boolean alcoholic = person.rand() < 0.025;
       person.attributes.put(Person.ALCOHOLIC, alcoholic);
-      double quitAlcoholismBaseline = Double
-          .parseDouble(Config.get("lifecycle.quit_alcoholism.baseline", "0.05"));
+      double quitAlcoholismBaseline =
+              Config.getAsDouble("lifecycle.quit_alcoholism.baseline", 0.05);
       person.attributes.put(QUIT_ALCOHOLISM_PROBABILITY, quitAlcoholismBaseline);
     }
   }
@@ -926,10 +1129,9 @@ public final class LifecycleModule extends Module {
           person.attributes.put(Person.SMOKER, false);
           person.attributes.put(QUIT_SMOKING_AGE, age);
         } else {
-          double quitSmokingBaseline = Double
-              .parseDouble(Config.get("lifecycle.quit_smoking.baseline", "0.01"));
-          double quitSmokingTimestepDelta = Double
-              .parseDouble(Config.get("lifecycle.quit_smoking.timestep_delta", "-0.1"));
+          double quitSmokingBaseline = Config.getAsDouble("lifecycle.quit_smoking.baseline", 0.01);
+          double quitSmokingTimestepDelta =
+                  Config.getAsDouble("lifecycle.quit_smoking.timestep_delta", -0.1);
           probability += quitSmokingTimestepDelta;
           if (probability < quitSmokingBaseline) {
             probability = quitSmokingBaseline;
@@ -955,10 +1157,10 @@ public final class LifecycleModule extends Module {
           person.attributes.put(Person.ALCOHOLIC, false);
           person.attributes.put(QUIT_ALCOHOLISM_AGE, age);
         } else {
-          double quitAlcoholismBaseline = Double
-              .parseDouble(Config.get("lifecycle.quit_alcoholism.baseline", "0.01"));
-          double quitAlcoholismTimestepDelta = Double
-              .parseDouble(Config.get("lifecycle.quit_alcoholism.timestep_delta", "-0.1"));
+          double quitAlcoholismBaseline =
+                  Config.getAsDouble("lifecycle.quit_alcoholism.baseline", 0.01);
+          double quitAlcoholismTimestepDelta =
+                  Config.getAsDouble("lifecycle.quit_alcoholism.timestep_delta", -0.1);
           probability += quitAlcoholismTimestepDelta;
           if (probability < quitAlcoholismBaseline) {
             probability = quitAlcoholismBaseline;
@@ -978,10 +1180,9 @@ public final class LifecycleModule extends Module {
   public static void adherence(Person person, long time) {
     if (person.attributes.containsKey(Person.ADHERENCE)) {
       double probability = (double) person.attributes.get(ADHERENCE_PROBABILITY);
-      double adherenceBaseline = Double
-          .parseDouble(Config.get("lifecycle.adherence.baseline", "0.05"));
-      double adherenceTimestepDelta = Double
-          .parseDouble(Config.get("lifecycle.adherence.timestep_delta", "-.01"));
+      double adherenceBaseline = Config.getAsDouble("lifecycle.adherence.baseline", 0.05);
+      double adherenceTimestepDelta =
+              Config.getAsDouble("lifecycle.adherence.timestep_delta", -0.01);
       probability += adherenceTimestepDelta;
       if (probability < adherenceBaseline) {
         probability = adherenceBaseline;
@@ -1028,6 +1229,35 @@ public final class LifecycleModule extends Module {
   }
 
   /**
+   * Determines if the person is disabled according to input file
+   * criteria. If the input file is unavailable, the default is false.
+   * @param person The person.
+   * @param time The time.
+   * @return true or false.
+   */
+  public static boolean isDisabled(Person person, long time) {
+    if (disabilityCriteria != null) {
+      return disabilityCriteria.isPersonEligible(person, time);
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Determines earliest disability diagnosis time according to input file
+   * criteria. If the input file is unavailable, the default is Long.MAX_VALUE.
+   * @param person The person.
+   * @return Time of earliest disability diagnosis.
+   */
+  public static long getEarliestDisabilityDiagnosisTime(Person person) {
+    if (disabilityCriteria != null) {
+      return disabilityCriteria.getEarliestDiagnosis(person);
+    } else {
+      return Long.MAX_VALUE;
+    }
+  }
+
+  /**
    * Get all of the Codes this module uses, for inventory purposes.
    *
    * @return Collection of all codes and concepts this module uses
@@ -1064,12 +1294,14 @@ public final class LifecycleModule extends Module {
     Attributes.inventory(attributes, m, Person.NAME_PREFIX, true, false, null);
     Attributes.inventory(attributes, m, Person.NAME_SUFFIX, true, false, null);
     Attributes.inventory(attributes, m, Person.MARITAL_STATUS, true, false, null);
+    Attributes.inventory(attributes, m, Person.MIDDLE_NAME, true, true, null);
     Attributes.inventory(attributes, m, "osteoporosis", true, false, null);
     Attributes.inventory(attributes, m, "prediabetes", true, false, null);
     Attributes.inventory(attributes, m, QUIT_ALCOHOLISM_PROBABILITY, true, false, null);
     Attributes.inventory(attributes, m, QUIT_SMOKING_PROBABILITY, true, false, null);
     Attributes.inventory(attributes, m, Person.RACE, true, false, null);
     Attributes.inventory(attributes, m, Person.SMOKER, true, false, "Boolean");
+    Attributes.inventory(attributes, m, Person.DEATHDATE, true, false, "1046327126000");
     // Write
     Attributes.inventory(attributes, m, "pregnant", false, true, "Boolean");
     Attributes.inventory(attributes, m, "probability_of_fall_injury", false, true, "1.0");
@@ -1112,5 +1344,6 @@ public final class LifecycleModule extends Module {
     Attributes.inventory(attributes, m, QUIT_ALCOHOLISM_PROBABILITY, false, true, "1.0");
     Attributes.inventory(attributes, m, QUIT_SMOKING_AGE, false, true, "Numeric");
     Attributes.inventory(attributes, m, QUIT_SMOKING_PROBABILITY, false, true, "1.0");
+    Attributes.inventory(attributes, m, DAYS_UNTIL_DEATH, false, true, "42");
   }
 }

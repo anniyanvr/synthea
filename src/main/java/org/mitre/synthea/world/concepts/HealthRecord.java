@@ -20,14 +20,19 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.mitre.synthea.export.JSONSkip;
 import org.mitre.synthea.helpers.RandomNumberGenerator;
 import org.mitre.synthea.helpers.Utilities;
+import org.mitre.synthea.modules.EncounterModule;
 import org.mitre.synthea.world.agents.Clinician;
 import org.mitre.synthea.world.agents.Person;
 import org.mitre.synthea.world.agents.Provider;
+
 
 /**
  * HealthRecord contains all the coded entries in a person's health record. This
@@ -36,21 +41,60 @@ import org.mitre.synthea.world.agents.Provider;
  */
 public class HealthRecord implements Serializable {
 
+  /** Constant representing encounters in the health record. */
   public static final String ENCOUNTERS = "encounters";
+
+  /** Constant representing procedures in the health record. */
   public static final String PROCEDURES = "procedures";
+
+  /** Constant representing medications in the health record. */
   public static final String MEDICATIONS = "medications";
+
+  /** Constant representing immunizations in the health record. */
   public static final String IMMUNIZATIONS = "immunizations";
 
   /**
    * HealthRecord.Code represents a system, code, and display value.
    */
   public static class Code implements Comparable<Code>, Serializable {
+
+    @Override
+    public int hashCode() {
+      int hash = 7;
+      hash = 67 * hash + Objects.hashCode(this.system);
+      hash = 67 * hash + Objects.hashCode(this.code);
+      return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+      final Code other = (Code) obj;
+      if (!Objects.equals(this.code, other.code)) {
+        return false;
+      }
+      if (!Objects.equals(this.system, other.system)) {
+        return false;
+      }
+      return true;
+    }
+
     /** Code System (e.g. LOINC, RxNorm, SNOMED) identifier (typically a URI) */
     public String system;
     /** The code itself. */
     public String code;
     /** The human-readable description of the code. */
     public String display;
+    /** An identifier for the version of the code system that this code is part of. */
+    public String version;
     /**
      * A ValueSet URI that defines a set of possible codes, one of which should be selected at
      * random.
@@ -62,7 +106,7 @@ public class HealthRecord implements Serializable {
      *
      * @param system  the URI identifier of the code system
      * @param code    the code itself
-     * @param display human-readable description of the coe
+     * @param display human-readable description of the code
      */
     public Code(String system, String code, String display) {
       this.system = system;
@@ -82,13 +126,13 @@ public class HealthRecord implements Serializable {
       this.display = definition.get("display").getAsString();
     }
 
-    public boolean equals(Code other) {
-      return this.system.equals(other.system) && this.code.equals(other.code);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     public String toString() {
-      return String
-          .format("system=%s, code=%s, display=%s, valueSet=%s", system, code, display, valueSet);
+      return String.format(
+          "system=%s, code=%s, display=%s, version=%s, valueSet=%s",
+          system, code, display, version, valueSet);
     }
 
     /**
@@ -120,18 +164,35 @@ public class HealthRecord implements Serializable {
    * stop times, a type, and a list of associated codes.
    */
   public class Entry implements Serializable {
-    /** reference to the HealthRecord this entry belongs to. */
+
+    /** Reference to the HealthRecord this entry belongs to. */
+    @JSONSkip
     HealthRecord record = HealthRecord.this;
+
+    /** Unique identifier for the entry. */
+    public final UUID uuid = record.person.randUUID();
+    /** Cached full URL used in FHIR exporters. */
     public String fullUrl;
+    /** Name of the entry. */
     public String name;
+    /** Start time of the entry. */
     public long start;
+    /** Stop time of the entry. */
     public long stop;
+    /** Type of the entry. */
     public String type;
+    /** List of associated codes for the entry. */
     public List<Code> codes;
+    /** Cost of the entry. */
     private BigDecimal cost;
+    /** Note associated with the entry. */
+    public String note;
 
     /**
      * Constructor for Entry.
+     *
+     * @param start the start time of the entry
+     * @param type  the type of the entry
      */
     public Entry(long start, String type) {
       this.start = start;
@@ -150,6 +211,8 @@ public class HealthRecord implements Serializable {
 
     /**
      * Returns the base cost of the entry.
+     *
+     * @return the cost of the entry
      */
     public BigDecimal getCost() {
       if ((this.cost == null)) {
@@ -160,7 +223,8 @@ public class HealthRecord implements Serializable {
 
     /**
      * Determines if the given entry contains the provided code in its list of codes.
-     * @param code clinical term
+     *
+     * @param code   clinical term
      * @param system system for the code
      * @return true if the code is there
      */
@@ -183,6 +247,8 @@ public class HealthRecord implements Serializable {
 
     /**
      * Converts the entry to a String.
+     *
+     * @return string representation of the entry
      */
     @Override
     public String toString() {
@@ -190,11 +256,17 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /** An Entry with a list of reason codes */
   public abstract class EntryWithReasons extends Entry {
+    /**
+     * A list of reason codes associated with the entry.
+     */
     public List<Code> reasons;
 
     /**
      * Constructor for HealthRecord EntryWithReasons.
+     * @param time the time of the entry
+     * @param type the type of the entry
      */
     public EntryWithReasons(long time, String type) {
       super(time, type);
@@ -226,15 +298,25 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /** An Observation for the patient record */
   public class Observation extends Entry {
+    /** The value of this observation */
     public Object value;
+    /** The category this observation falls under, bound by a valueset */
     public String category;
+    /** The unit of the value */
     public String unit;
+    /** List of sub-observations  */
     public List<Observation> observations;
+    /** The report this observation is part of, if any */
+    @JSONSkip
     public Report report;
 
     /**
      * Constructor for Observation HealthRecord Entry.
+     * @param time the time of the entry
+     * @param type the type of the entry
+     * @param value the value of the observation
      */
     public Observation(long time, String type, Object value) {
       super(time, type);
@@ -243,11 +325,18 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /**
+   * Report is a collection of observations that are grouped together
+   */
   public class Report extends Entry {
+    /** The observations which comprise this report */
     public List<Observation> observations;
 
     /**
      * Constructor for Report HealthRecord Entry.
+     * @param time the time of the entry
+     * @param type the type of the entry
+     * @param observations the list of observations associated with this report
      */
     public Report(long time, String type, List<Observation> observations) {
       super(time, type);
@@ -255,15 +344,25 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /**
+   * Medication is a prescription or administration of a medication.
+   */
   public class Medication extends EntryWithReasons {
+    /** The reason to stop giving the medication */
     public Code stopReason;
+    /** Details about the prescription */
     public transient JsonObject prescriptionDetails;
+    /** The claim associated with this medication */
     public Claim claim;
+    /** Whether the medication is being administered */
     public boolean administration;
+    /** Whether the medication is being taken chronically */
     public boolean chronic;
 
     /**
      * Constructor for Medication HealthRecord Entry.
+     * @param time the time of the entry
+     * @param type the type of the entry
      */
     public Medication(long time, String type) {
       super(time, type);
@@ -274,6 +373,7 @@ public class HealthRecord implements Serializable {
     /**
      * Java Serialization support for the prescriptionDetails field.
      * @param oos stream to write to
+     * @throws IOException if the serialization fails
      */
     private void writeObject(ObjectOutputStream oos) throws IOException {
       oos.defaultWriteObject();
@@ -287,6 +387,8 @@ public class HealthRecord implements Serializable {
     /**
      * Java Serialization support for the prescriptionDetails field.
      * @param ois stream to read from
+     * @throws ClassNotFoundException if the class is not found
+     * @throws IOException if the deserialization fails
      */
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
       ois.defaultReadObject();
@@ -296,25 +398,93 @@ public class HealthRecord implements Serializable {
         this.prescriptionDetails = gson.fromJson(prescriptionJson, JsonObject.class);
       }
     }
+
+    /**
+     * Get the quantity of medication prescribed or administered.
+     * If "prescriptionDetails" was specified, the quantity is calculated based
+     * on the amount, frequency, period, and duration. If those details are not
+     * present, the default quantity for an administration is 1 and the default
+     * quantity for a prescription is 30 (daily prescription for one month).
+     * @return calculated quantity of medication, or 30 by default.
+     */
+    public long getQuantity() {
+      if (this.prescriptionDetails == null) {
+        if (this.administration) {
+          return 1; // a single administration
+        } else {
+          return 30; // daily prescription for one month
+        }
+      } else {
+        BigDecimal amount = BigDecimal.ONE;
+        BigDecimal frequency = BigDecimal.ONE;
+        BigDecimal period = BigDecimal.ONE;
+        String periodUOM = "days";
+        BigDecimal duration = BigDecimal.ONE;
+        String durationUOM = "months";
+
+        if (this.prescriptionDetails.has("dosage")) {
+          JsonObject dosage = this.prescriptionDetails.get("dosage").getAsJsonObject();
+          amount = dosage.get("amount").getAsBigDecimal();
+          frequency = dosage.get("frequency").getAsBigDecimal();
+          period = dosage.get("period").getAsBigDecimal();
+          periodUOM = dosage.get("unit").getAsString();
+        }
+        if (this.prescriptionDetails.has("duration")) {
+          JsonObject drtn = this.prescriptionDetails.get("duration").getAsJsonObject();
+          duration = drtn.get("quantity").getAsBigDecimal();
+          durationUOM = drtn.get("unit").getAsString();
+        }
+
+        // convert period into milliseconds
+        period = BigDecimal.valueOf(Utilities.convertTime(periodUOM, period.longValue()));
+        // convert duration into milliseconds
+        duration = BigDecimal.valueOf(Utilities.convertTime(durationUOM, duration.longValue()));
+
+        BigDecimal quantityPerPeriod = amount.multiply(frequency);
+        BigDecimal periodsPerDuration = duration.divide(period);
+        BigDecimal quantity =  quantityPerPeriod.multiply(periodsPerDuration);
+        return quantity.longValue();
+      }
+    }
   }
 
+  /**
+   * Represents an immunization entry in a patient's health record.
+   */
   public class Immunization extends Entry {
+    /** Make the series functionally null */
     public int series = -1;
 
     /**
      * Constructor for Immunization HealthRecord Entry.
+     * @param start the entry time
+     * @param type the type of the entry
      */
     public Immunization(long start, String type) {
       super(start, type);
     }
   }
 
+  /**
+   * Represents a procedure performed on a patient.
+   */
   public class Procedure extends EntryWithReasons {
+
+    /**
+     * The provider responsible for the procedure.
+     */
     public Provider provider;
+
+    /**
+     * The clinician who performed the procedure.
+     */
     public Clinician clinician;
 
     /**
      * Constructor for Procedure HealthRecord Entry.
+     *
+     * @param time the time of the procedure.
+     * @param type the type of the procedure.
      */
     public Procedure(long time, String type) {
       super(time, type);
@@ -322,13 +492,31 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /**
+   * CarePlan is a plan for care that may include multiple activities and goals.
+   */
   public class CarePlan extends EntryWithReasons {
+
+    /**
+     * The set of activities included in the care plan.
+     */
     public Set<Code> activities;
+
+    /**
+     * The set of goals included in the care plan.
+     */
     public transient Set<JsonObject> goals;
+
+    /**
+     * The reason for stopping the care plan.
+     */
     public Code stopReason;
 
     /**
      * Constructor for CarePlan HealthRecord Entry.
+     *
+     * @param time the time of the care plan.
+     * @param type the type of the care plan.
      */
     public CarePlan(long time, String type) {
       super(time, type);
@@ -336,6 +524,12 @@ public class HealthRecord implements Serializable {
       this.goals = new LinkedHashSet<JsonObject>();
     }
 
+    /**
+     * Serialize the care plan goals.
+     *
+     * @param oos the output stream to write to.
+     * @throws IOException if serialization fails.
+     */
     private void writeObject(ObjectOutputStream oos) throws IOException {
       oos.defaultWriteObject();
       ArrayList<String> stringifiedGoals = new ArrayList<>(this.goals.size());
@@ -345,6 +539,13 @@ public class HealthRecord implements Serializable {
       oos.writeObject(stringifiedGoals);
     }
 
+    /**
+     * Deserialize the care plan goals.
+     *
+     * @param ois the input stream to read from.
+     * @throws ClassNotFoundException if the class is not found.
+     * @throws IOException if deserialization fails.
+     */
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
       ois.defaultReadObject();
       ArrayList<String> stringifiedGoals = (ArrayList<String>) ois.readObject();
@@ -356,12 +557,20 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /**
+   * ImagingStudy represents a collection of images
+   */
   public class ImagingStudy extends Entry {
+    /** A randomly assigned DICOM UID */
     public String dicomUid;
+    /** The series of images associated with this study */
     public List<Series> series;
 
     /**
      * Constructor for ImagingStudy HealthRecord Entry.
+     * @param person the person for whom this imaging study is being created
+     * @param time the time of the imaging study
+     * @param type the type of the imaging study
      */
     public ImagingStudy(Person person, long time, String type) {
       super(time, type);
@@ -391,6 +600,7 @@ public class HealthRecord implements Serializable {
        * Actual number is picked uniformly randomly from this range, copying instance data from
        * the first instance provided. */
       public int minNumberInstances = 0;
+      /** max */
       public int maxNumberInstances = 0;
 
       @Override
@@ -438,16 +648,27 @@ public class HealthRecord implements Serializable {
    * or hip, heart pacemaker, or implantable defibrillator.
    */
   public class Device extends Entry {
+    /** manufacturer of the device */
     public String manufacturer;
+    /** model of the device */
     public String model;
     /** UDI == Unique Device Identifier. */
     public String udi;
+    /** the time the device was manufactured */
     public long manufactureTime;
+    /** time of expiry of this device (if applicable) */
     public long expirationTime;
+    /** Mandatory fixed portion of UDI */
     public String deviceIdentifier;
+    /** Lot number of manufacture */
     public String lotNumber;
+    /** Serial number assigned by the manufacturer */
     public String serialNumber;
 
+    /** Constructor for device
+     * @param start the time of the entry
+     * @param type the type of the entry
+     */
     public Device(long start, String type) {
       super(start, type);
     }
@@ -487,17 +708,44 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /** Supply resource */
   public class Supply extends Entry {
+    /** Constructor for Supply
+     * @param start the time of the entry
+     * @param type the type of the entry
+     */
     public Supply(long start, String type) {
       super(start, type);
     }
 
+    /** Amount in the supply */
     public int quantity;
   }
 
+  /**
+   * EncounterType represents the type of an encounter.
+   */
   public enum EncounterType {
-    WELLNESS("AMB"), AMBULATORY("AMB"), OUTPATIENT("AMB"),
-        INPATIENT("IMP"), EMERGENCY("EMER"), URGENTCARE("AMB");
+    /** Routine wellness check. */
+    WELLNESS("AMB"),
+    /** Ambulatory care visit. */
+    AMBULATORY("AMB"),
+    /** Outpatient care visit. */
+    OUTPATIENT("AMB"),
+    /** Inpatient hospital stay. */
+    INPATIENT("IMP"),
+    /** Emergency room visit. */
+    EMERGENCY("EMER"),
+    /** Urgent care visit. */
+    URGENTCARE("AMB"),
+    /** Hospice care. */
+    HOSPICE("HH"),
+    /** Home health care. */
+    HOME("HH"),
+    /** Skilled nursing facility stay. */
+    SNF("IMP"),
+    /** Virtual care visit. */
+    VIRTUAL("VR");
 
     // http://www.hl7.org/implement/standards/fhir/v3/ActEncounterCode/vs.html
     private final String code;
@@ -510,6 +758,7 @@ public class HealthRecord implements Serializable {
      * Convert the given string into an EncounterType.
      *
      * @param value the string to convert.
+     * @return The corresponding EncounterType, or AMBULATORY if the value is null.
      */
     public static EncounterType fromString(String value) {
       if (value == null) {
@@ -521,6 +770,9 @@ public class HealthRecord implements Serializable {
       }
     }
 
+    /**
+     * Returns the code for this EncounterType.
+     * @return the code */
     public String code() {
       return this.code;
     }
@@ -534,26 +786,49 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /**
+   * Represents a single encounter in a person's health record.
+   */
   public class Encounter extends Entry {
+    /** Observations recorded during the encounter. */
     public List<Observation> observations;
+    /** Reports generated during the encounter. */
     public List<Report> reports;
+    /** Conditions diagnosed during the encounter. */
     public List<Entry> conditions;
+    /** Allergies identified during the encounter. */
     public List<Allergy> allergies;
+    /** Procedures performed during the encounter. */
     public List<Procedure> procedures;
+    /** Immunizations administered during the encounter. */
     public List<Immunization> immunizations;
+    /** Medications prescribed or administered during the encounter. */
     public List<Medication> medications;
+    /** Care plans initiated or updated during the encounter. */
     public List<CarePlan> careplans;
+    /** Imaging studies performed during the encounter. */
     public List<ImagingStudy> imagingStudies;
+    /** Devices implanted or assigned during the encounter. */
     public List<Device> devices;
+    /** Supplies used during the encounter. */
     public List<Supply> supplies;
+    /** Claim associated with the encounter. */
     public Claim claim; // for now assume 1 claim per encounter
+    /** Reason for the encounter. */
     public Code reason;
+    /** Discharge information for the encounter. */
     public Code discharge;
+    /** Provider responsible for the encounter. */
     public Provider provider;
+    /** Clinician who performed the encounter. */
     public Clinician clinician;
+    /** Indicates whether the encounter has ended. */
     public boolean ended;
-    // Track if we renewed meds at this encounter. Used in State.java encounter state.
+    /** Time when the encounter ended. */
+    public long endedTime;
+    /** Track if we renewed meds at this encounter. Used in State.java encounter state. */
     public boolean chronicMedsRenewed;
+    /** Clinical note associated with the encounter. */
     public String clinicalNote;
 
     /**
@@ -566,8 +841,10 @@ public class HealthRecord implements Serializable {
       if (type.equalsIgnoreCase(EncounterType.EMERGENCY.toString())) {
         // Emergency encounters should take at least an hour.
         this.stop = this.start + TimeUnit.MINUTES.toMillis(60);
-      } else if (type.equalsIgnoreCase(EncounterType.INPATIENT.toString())) {
-        // Inpatient encounters should last at least a day (1440 minutes).
+      } else if (type.equalsIgnoreCase(EncounterType.INPATIENT.toString())
+          || type.equalsIgnoreCase(EncounterType.HOSPICE.toString())
+          || type.equalsIgnoreCase(EncounterType.SNF.toString())) {
+        // These longer encounters should last at least a day (1440 minutes).
         this.stop = this.start + TimeUnit.MINUTES.toMillis(1440);
       } else {
         // Other encounters will default to 15 minutes.
@@ -621,8 +898,9 @@ public class HealthRecord implements Serializable {
 
     /**
      * Find the first observation in the encounter with the given LOINC code.
-     * @param code The LOINC code to look for
-     * @return A single observation or null
+     *
+     * @param code The LOINC code to look for.
+     * @return A single observation or null if none exists.
      */
     public Observation findObservation(String code) {
       return observations
@@ -634,7 +912,8 @@ public class HealthRecord implements Serializable {
 
     /**
      * Find the encounter that happened before this one.
-     * @return The previous encounter or null if this is the first
+     *
+     * @return The previous encounter or null if this is the first.
      */
     public Encounter previousEncounter() {
       if (record.encounters.size() < 2) {
@@ -648,25 +927,98 @@ public class HealthRecord implements Serializable {
         }
       }
     }
+
+    /**
+     * End the encounter.
+     * @param time The time of the simulation.
+     */
+    public void end(long time) {
+      if (!this.ended) {
+        long endTime = this.stop;
+        // we need to find the latest time of all enclosed entries...
+        // ignoring entries that can extended beyond the end date of an encounter:
+        // - conditions, allergies, medications, careplans, devices
+        // starting with observations...
+        long max;
+        if (observations.size() > 0) {
+          max = observations.stream().map((e) -> e.stop)
+              .filter(l -> l != 0L).max(Long::compare).orElse(endTime);
+          endTime = Long.max(endTime, max);
+        }
+        // reports...
+        if (reports.size() > 0) {
+          max = reports.stream().map((e) -> e.stop)
+              .filter(l -> l != 0L).max(Long::compare).orElse(endTime);
+          endTime = Long.max(endTime, max);
+        }
+        // procedures...
+        if (procedures.size() > 0) {
+          max = procedures.stream().map((e) -> e.stop)
+              .filter(l -> l != 0L).max(Long::compare).orElse(endTime);
+          endTime = Long.max(endTime, max);
+        }
+        // immunizations...
+        if (immunizations.size() > 0) {
+          max = immunizations.stream().map((e) -> e.stop)
+              .filter(l -> l != 0L).max(Long::compare).orElse(endTime);
+          endTime = Long.max(endTime, max);
+        }
+        // imaging studies...
+        if (imagingStudies.size() > 0) {
+          max = imagingStudies.stream().map((e) -> e.stop)
+              .filter(l -> l != 0L).max(Long::compare).orElse(endTime);
+          endTime = Long.max(endTime, max);
+        }
+        // supplies...
+        if (supplies.size() > 0) {
+          max = supplies.stream().map((e) -> e.stop)
+              .filter(l -> l != 0L).max(Long::compare).orElse(endTime);
+          endTime = Long.max(endTime, max);
+        }
+        if (this.stop == 0L || endTime == 0L) {
+          this.stop = time;
+        } else {
+          this.stop = Long.max(endTime, time);
+        }
+        this.ended = true;
+        this.endedTime = time;
+      }
+    }
   }
 
+  /** Enum of snomed codes to use for Allergy resource */
   public enum ReactionSeverity {
+    /** Severe allergic reaction */
     SEVERE("24484000", "Severe"),
+    /** Moderate allergic reaction */
     MODERATE("6736007", "Moderate"),
+    /** Mild allergic reaction */
     MILD("255604002", "Mild");
-
+    /** The code of the reaction severity */
     public String code;
+    /** The text display describing the code */
     public String display;
 
+    /**
+     * Constructor for ReactionSeverity.
+     * @param code the code
+     * @param display the text display for the code
+    */
     ReactionSeverity(String code, String display) {
       this.code = code;
       this.display = display;
     }
   }
 
+  /**
+   * Allergy represents an allergy or intolerance that a person has.
+   */
   public class Allergy extends Entry {
+    /** The type of allergy */
     public String allergyType;
+    /** The category of allergy */
     public String category;
+    /** Map associating codes with reaction severity */
     public HashMap<Code, ReactionSeverity> reactions;
 
     /**
@@ -680,12 +1032,20 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /** the person associated with the health record */
+  @JSONSkip
   private Person person;
+  /** the provider associated with the health record */
   public Provider provider;
+  /** encounters in this health record */
   public List<Encounter> encounters;
+  /** A map of ids to entries in the record */
+  @JSONSkip
   public Map<String, Entry> present;
   /** recorded death date/time. */
   public Long death;
+  /** The person's demographics at the time of record creation. */
+  public Map<String, Object> demographicsAtRecordCreation;
 
   /**
    * Construct a health record for the supplied person.
@@ -695,10 +1055,14 @@ public class HealthRecord implements Serializable {
     this.person = person;
     encounters = new ArrayList<Encounter>();
     present = new HashMap<String, Entry>();
+    if (person.attributes.get(Person.HOUSEHOLD) != null) {
+      this.demographicsAtRecordCreation = new HashMap<String,Object>(person.attributes);
+    }
   }
 
   /**
    * Returns the number of providers associated with this healthrecord.
+   * @return the number of unique providers.
    */
   public int providerCount() {
     List<String> uuids = new ArrayList<String>();
@@ -757,12 +1121,17 @@ public class HealthRecord implements Serializable {
    */
   public Encounter currentEncounter(long time) {
     Encounter encounter = null;
-    if (encounters.size() >= 1) {
-      encounter = encounters.get(encounters.size() - 1);
-    } else {
-      encounter = new Encounter(time, EncounterType.WELLNESS.toString());
+    if (encounters.size() == 0) {
+      encounter = EncounterModule.createEncounter(person, time, EncounterType.WELLNESS,
+          ClinicianSpecialty.GENERAL_PRACTICE,
+          EncounterModule.WELL_CHILD_VISIT, EncounterModule.NAME);
       encounter.name = "First Wellness";
-      encounters.add(encounter);
+    }
+    for (int i = encounters.size() - 1; i >= 0; i--) {
+      encounter = encounters.get(i);
+      if (encounter.start <= time) {
+        return encounter;
+      }
     }
     return encounter;
   }
@@ -774,13 +1143,25 @@ public class HealthRecord implements Serializable {
    * @return the time difference, negative if time is before the first wellness encounter).
    */
   public long timeSinceLastWellnessEncounter(long time) {
+    Encounter encounter = lastWellnessEncounter();
+    if (encounter != null) {
+      return (time - encounter.start);
+    }
+    return Long.MAX_VALUE;
+  }
+
+  /**
+   * Return the last wellness encounter for the individual.
+   * @return the Encounter or null if it does not exist
+   */
+  public Encounter lastWellnessEncounter() {
     for (int i = encounters.size() - 1; i >= 0; i--) {
       Encounter encounter = encounters.get(i);
       if (encounter.type.equals(EncounterType.WELLNESS.toString())) {
-        return (time - encounter.start);
+        return encounter;
       }
     }
-    return Long.MAX_VALUE;
+    return null;
   }
 
   /**
@@ -996,6 +1377,7 @@ public class HealthRecord implements Serializable {
     device.generateUDI(person);
     Encounter encounter = currentEncounter(time);
     encounter.devices.add(device);
+    encounter.claim.addLineItem(device);
     present.put(type, device);
     return device;
   }
@@ -1046,6 +1428,7 @@ public class HealthRecord implements Serializable {
     supply.codes.add(code);
     supply.quantity = quantity;
     encounter.supplies.add(supply);
+    encounter.claim.addLineItem(supply);
     return supply;
   }
 
@@ -1072,6 +1455,7 @@ public class HealthRecord implements Serializable {
     }
     Report report = new Report(time, type, observations);
     encounter.reports.add(report);
+    encounter.claim.addLineItem(report);
     observations.forEach(o -> o.report = report);
     return report;
   }
@@ -1081,7 +1465,7 @@ public class HealthRecord implements Serializable {
    *
    * @param time the start time of the encounter.
    * @param type the type of the encounter.
-   * @return
+   * @return the newly created encounter.
    */
   public Encounter encounterStart(long time, EncounterType type) {
     Encounter encounter = new Encounter(time, type.toString());
@@ -1101,17 +1485,20 @@ public class HealthRecord implements Serializable {
       Encounter encounter = encounters.get(i);
       EncounterType encounterType = EncounterType.fromString(encounter.type);
       if (encounterType == type && !encounter.ended) {
-        encounter.ended = true;
-        // Only override the stop time if it is longer than the default.
-        if (time > encounter.stop) {
-          encounter.stop = time;
-        }
-        // Update Costs/Claim infomation.
+        encounter.end(time);
+        // Update Costs/Claim information.
         encounter.determineCost();
         encounter.claim.assignCosts();
         return;
       }
     }
+  }
+
+  /**
+   * Gets the time of the most recent encounter in this health record.
+   * @return the time of the most recent encounter */
+  public long lastEncounterTime() {
+    return encounters.stream().mapToLong(e -> e.stop).max().orElse(Long.MIN_VALUE);
   }
 
   /**
@@ -1142,7 +1529,13 @@ public class HealthRecord implements Serializable {
     if (!present.containsKey(type)) {
       medication = new Medication(time, type);
       medication.chronic = chronic;
-      currentEncounter(time).medications.add(medication);
+
+      Encounter encounter = currentEncounter(time);
+      encounter.medications.add(medication);
+      /* Do not add medications to the Encounter claim.
+       * Medications submit separate claims.
+       */
+      // encounter.claim.addLineItem(medication);
       present.put(type, medication);
     } else {
       medication = (Medication) present.get(type);
@@ -1152,6 +1545,27 @@ public class HealthRecord implements Serializable {
     if (chronic) {
       person.chronicMedications.put(type, medication);
     }
+
+    return medication;
+  }
+
+  /**
+   * Administer a medication without altering existing medications.
+   * @param time the time of the administration.
+   * @param type the type of the medication to administer.
+   * @return new medication of the specified type.
+   */
+  public Medication medicationAdministration(long time, String type) {
+    Medication medication = new Medication(time, type);
+    medication.stop = time;
+    medication.administration = true;
+
+    Encounter encounter = currentEncounter(time);
+    encounter.medications.add(medication);
+    /* Do not add medications to the Encounter claim.
+     * Medications submit separate claims.
+     */
+    // encounter.claim.addLineItem(medication);
 
     return medication;
   }
@@ -1170,9 +1584,6 @@ public class HealthRecord implements Serializable {
 
       chronicMedicationEnd(type);
 
-      // Update Costs/Claim infomation.
-      medication.determineCost();
-      medication.claim.assignCosts();
       present.remove(type);
     }
   }
@@ -1212,6 +1623,10 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /** Returns whether the specified medication is active
+   * @param type the type of the medication to check
+   * @return true if the medication exists and does not have a specified stop time, false otherwise
+   */
   public boolean medicationActive(String type) {
     return present.containsKey(type) && ((Medication) present.get(type)).stop == 0L;
   }
@@ -1272,6 +1687,10 @@ public class HealthRecord implements Serializable {
     }
   }
 
+  /** Returns whether the careplan is currently active
+   * @param type the type of the care plan to check
+   * @return true if the care plan exists and does not have a specified stop time, false otherwise
+   */
   public boolean careplanActive(String type) {
     return present.containsKey(type) && ((CarePlan) present.get(type)).stop == 0L;
   }
@@ -1281,7 +1700,7 @@ public class HealthRecord implements Serializable {
    * @param time the time of the study.
    * @param type the type of the study.
    * @param series the series associated with the study.
-   * @return
+   * @return the new imaging study.
    */
   public ImagingStudy imagingStudy(long time, String type,
       List<ImagingStudy.Series> series) {

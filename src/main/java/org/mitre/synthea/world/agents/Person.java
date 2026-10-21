@@ -7,100 +7,200 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.mitre.synthea.engine.ExpressedConditionRecord;
 import org.mitre.synthea.engine.ExpressedSymptom;
 import org.mitre.synthea.engine.Module;
 import org.mitre.synthea.engine.State;
 import org.mitre.synthea.helpers.Config;
 import org.mitre.synthea.helpers.ConstantValueGenerator;
+import org.mitre.synthea.helpers.DefaultRandomNumberGenerator;
 import org.mitre.synthea.helpers.RandomNumberGenerator;
 import org.mitre.synthea.helpers.Utilities;
 import org.mitre.synthea.helpers.ValueGenerator;
+import org.mitre.synthea.identity.Entity;
 import org.mitre.synthea.modules.QualityOfLifeModule;
-import org.mitre.synthea.world.concepts.CoverageRecord;
-import org.mitre.synthea.world.concepts.CoverageRecord.Plan;
 import org.mitre.synthea.world.concepts.HealthRecord;
 import org.mitre.synthea.world.concepts.HealthRecord.Code;
 import org.mitre.synthea.world.concepts.HealthRecord.Encounter;
 import org.mitre.synthea.world.concepts.HealthRecord.EncounterType;
 import org.mitre.synthea.world.concepts.VitalSign;
+import org.mitre.synthea.world.concepts.healthinsurance.CoverageRecord;
+import org.mitre.synthea.world.concepts.healthinsurance.InsurancePlan;
 import org.mitre.synthea.world.geography.quadtree.QuadTreeElement;
 
+/**
+ * Represents a person in the simulation.
+ */
 public class Person implements Serializable, RandomNumberGenerator, QuadTreeElement {
   private static final long serialVersionUID = 4322116644425686379L;
-  private static final ZoneId timeZone = ZoneId.systemDefault();
 
+  /** Represents the birthdate of the person. */
   public static final String BIRTHDATE = "birthdate";
+  /** Represents the birthdate of the person as a LocalDate object. */
+  public static final String BIRTHDATE_AS_LOCALDATE = "birthdate_as_localdate";
+  /** Represents the death date of the person. */
   public static final String DEATHDATE = "deathdate";
+  /** Represents the first name of the person. */
   public static final String FIRST_NAME = "first_name";
+  /** Represents the middle name of the person. */
+  public static final String MIDDLE_NAME = "middle_name";
+  /** Represents the last name of the person. */
   public static final String LAST_NAME = "last_name";
+  /** Represents the maiden name of the person. */
   public static final String MAIDEN_NAME = "maiden_name";
+  /** Represents the prefix of the person's name. */
   public static final String NAME_PREFIX = "name_prefix";
+  /** Represents the suffix of the person's name. */
   public static final String NAME_SUFFIX = "name_suffix";
+  /** Represents the name of the person. */
   public static final String NAME = "name";
+  /** Represents the race of the person. */
   public static final String RACE = "race";
+  /** Represents the ethnicity of the person. */
   public static final String ETHNICITY = "ethnicity";
+  /** Represents the first language of the person. */
   public static final String FIRST_LANGUAGE = "first_language";
+  /** Represents the gender of the person. */
   public static final String GENDER = "gender";
+  /** Represents whether the person is part of a multiple birth. */
   public static final String MULTIPLE_BIRTH_STATUS = "multiple_birth_status";
+  /** Represents the telecom information of the person. */
   public static final String TELECOM = "telecom";
+  /** Represents the ID of the person. */
   public static final String ID = "id";
+  /** Represents the address of the person. */
   public static final String ADDRESS = "address";
-  public static final String CITY = "city";
-  public static final String STATE = "state";
-  public static final String ZIP = "zip";
-  public static final String BIRTHPLACE = "birthplace";
+  /** Represents the city of birth of the person. */
   public static final String BIRTH_CITY = "birth_city";
-  public static final String BIRTH_STATE = "birth_state";
+  /** Represents the country of birth of the person. */
   public static final String BIRTH_COUNTRY = "birth_country";
-  public static final String COORDINATE = "coordinate";
-  public static final String NAME_MOTHER = "name_mother";
-  public static final String NAME_FATHER = "name_father";
-  public static final String MARITAL_STATUS = "marital_status";
-  public static final String SOCIOECONOMIC_SCORE = "socioeconomic_score";
-  public static final String SOCIOECONOMIC_CATEGORY = "socioeconomic_category";
-  public static final String INCOME = "income";
-  public static final String INCOME_LEVEL = "income_level";
-  public static final String POVERTY_RATIO = "poverty_ratio";
-  public static final String EDUCATION = "education";
-  public static final String EDUCATION_LEVEL = "education_level";
-  public static final String OCCUPATION_LEVEL = "occupation_level";
-  public static final String SMOKER = "smoker";
-  public static final String ALCOHOLIC = "alcoholic";
-  public static final String ADHERENCE = "adherence";
-  public static final String IDENTIFIER_SSN = "identifier_ssn";
-  public static final String IDENTIFIER_DRIVERS = "identifier_drivers";
-  public static final String IDENTIFIER_PASSPORT = "identifier_passport";
-  public static final String IDENTIFIER_SITE = "identifier_site";
-  public static final String IDENTIFIER_RECORD_ID = "identifier_record_id";
-  public static final String CONTACT_FAMILY_NAME = "contact_family_name";
-  public static final String CONTACT_GIVEN_NAME = "contact_given_name";
-  public static final String CONTACT_EMAIL = "contact_email";
+  /** Represents the state of birth of the person. */
+  public static final String BIRTH_STATE = "birth_state";
+  /** Represents the birthplace of the person. */
+  public static final String BIRTHPLACE = "birthplace";
+  /** Represents the cause of death of the person. */
   public static final String CAUSE_OF_DEATH = "cause_of_death";
+  /** Represents the city of residence of the person. */
+  public static final String CITY = "city";
+  /** Represents the county of residence of the person. */
+  public static final String COUNTY = "county";
+  /** Represents the state of residence of the person. */
+  public static final String STATE = "state";
+  /** Represents the ZIP code of the person's residence. */
+  public static final String ZIP = "zip";
+  /** Represents the FIPS code of the person's location. */
+  public static final String FIPS = "fips";
+  /** Represents the geographic coordinates of the person. */
+  public static final String COORDINATE = "coordinate";
+  /** Represents the mother's name of the person. */
+  public static final String NAME_MOTHER = "name_mother";
+  /** Represents the father's name of the person. */
+  public static final String NAME_FATHER = "name_father";
+  /** Represents the marital status of the person. */
+  public static final String MARITAL_STATUS = "marital_status";
+  /** Represents the socioeconomic score of the person. */
+  public static final String SOCIOECONOMIC_SCORE = "socioeconomic_score";
+  /** Represents the socioeconomic category of the person. */
+  public static final String SOCIOECONOMIC_CATEGORY = "socioeconomic_category";
+  /** Represents the income of the person. */
+  public static final String INCOME = "income";
+  /** Represents the income level of the person. */
+  public static final String INCOME_LEVEL = "income_level";
+  /** Represents the poverty ratio of the person. */
+  public static final String POVERTY_RATIO = "poverty_ratio";
+  /** Represents the education level of the person. */
+  public static final String EDUCATION = "education";
+  /** Represents the education level category of the person. */
+  public static final String EDUCATION_LEVEL = "education_level";
+  /** Represents the occupation level of the person. */
+  public static final String OCCUPATION_LEVEL = "occupation_level";
+  /** Represents whether the person is a smoker. */
+  public static final String SMOKER = "smoker";
+  /** Represents whether the person is an alcoholic. */
+  public static final String ALCOHOLIC = "alcoholic";
+  /** Represents the adherence level of the person. */
+  public static final String ADHERENCE = "adherence";
+  /** Represents the social security number identifier of the person. */
+  public static final String IDENTIFIER_SSN = "identifier_ssn";
+  /** Represents the driver's license identifier of the person. */
+  public static final String IDENTIFIER_DRIVERS = "identifier_drivers";
+  /** Represents the passport identifier of the person. */
+  public static final String IDENTIFIER_PASSPORT = "identifier_passport";
+  /** Represents the site identifier of the person. */
+  public static final String IDENTIFIER_SITE = "identifier_site";
+  /** Represents the variant ID identifier of the person. */
+  public static final String IDENTIFIER_VARIANT_ID = "identifier_variant_id";
+  /** Represents the seed ID identifier of the person. */
+  public static final String IDENTIFIER_SEED_ID = "identifier_seed_id";
+  /** Represents the family name of the emergency contact for the person. */
+  public static final String CONTACT_FAMILY_NAME = "contact_family_name";
+  /** Represents the given name of the emergency contact for the person. */
+  public static final String CONTACT_GIVEN_NAME = "contact_given_name";
+  /** Represents the email contact information of the person. */
+  public static final String CONTACT_EMAIL = "contact_email";
+  /** Represents the sexual orientation of the person. */
   public static final String SEXUAL_ORIENTATION = "sexual_orientation";
+  /** Represents the location of the person. */
   public static final String LOCATION = "location";
+  /** Represents whether the person is actively managing their weight. */
   public static final String ACTIVE_WEIGHT_MANAGEMENT = "active_weight_management";
+  /** Represents the BMI percentile of the person. */
   public static final String BMI_PERCENTILE = "bmi_percentile";
+  /** Represents the growth trajectory of the person. */
   public static final String GROWTH_TRAJECTORY = "growth_trajectory";
+  /** Represents the current weight-length percentile of the person. */
   public static final String CURRENT_WEIGHT_LENGTH_PERCENTILE = "current_weight_length_percentile";
-  public static final String RECORD_GROUP = "record_group";
+  /** Represents the household associated with the person. */
+  public static final String HOUSEHOLD = "household";
+  /** Represents the link ID associated with the person. */
   public static final String LINK_ID = "link_id";
+  /** Represents whether the person is a veteran. */
   public static final String VETERAN = "veteran";
+  /** Represents whether the person is blind. */
+  public static final String BLINDNESS = "blindness";
+  /** Represents whether the person is disabled. */
+  public static final String DISABLED = "disabled";
+  /** Represents the role of the person within the household. */
+  public static final String HOUSEHOLD_ROLE = "household_role";
+  /** Represents the target weight loss for the person. */
+  public static final String TARGET_WEIGHT_LOSS = "target_weight_loss";
+  /** Represents the kilograms to gain for the person. */
+  public static final String KILOGRAMS_TO_GAIN = "kilograms_to_gain";
+  /** Represents the entity associated with the person. */
+  public static final String ENTITY = "ENTITY";
+  /** Represents the insurance status of the person. */
+  public static final String INSURANCE_STATUS = "insurance_status";
+  /** Represents whether the person experiences food insecurity. */
+  public static final String FOOD_INSECURITY = "food_insecurity";
+  /** Represents whether the person experiences severe housing cost burden. */
+  public static final String SEVERE_HOUSING_COST_BURDEN = "severe_housing_cost_burden";
+  /** Represents whether the person is unemployed. */
+  public static final String UNEMPLOYED = "unemployed";
+  /** Represents the employment model associated with the person. */
+  public static final String EMPLOYMENT_MODEL = "employment_model";
+  /** Represents whether the person has no vehicle access. */
+  public static final String NO_VEHICLE_ACCESS = "no_vehicle_access";
+  /** Represents whether the person is uninsured. */
+  public static final String UNINSURED = "uninsured";
+  /** Represents the last month the premium was paid. */
   private static final String LAST_MONTH_PAID = "last_month_paid";
 
-  private final Random random;
-  public final long seed;
+  /** The random number generator to default to */
+  private final DefaultRandomNumberGenerator random;
+  /** The random number generator seed for generating the population */
   public long populationSeed;
   /**
    * Tracks the last time that the person was updated over a serialize/deserialize.
@@ -110,13 +210,16 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
    * Tracks the remaining modules for a person over a serialize/deserialize.
    */
   public List<Module> currentModules;
+  /** Map of attributes for the person. */
   public Map<String, Object> attributes;
+  /** Map of vital signs to their value generators. */
   public Map<VitalSign, ValueGenerator> vitalSigns;
   /** Data structure for storing symptoms faced by a person.
    * Adding the Long keyset to keep track of the time a symptom is set. */
   Map<String, ExpressedSymptom> symptoms;
   /** Data structure for storing onset conditions (init_time, end_time).*/
   public ExpressedConditionRecord onsetConditionRecord;
+  /** Map of chronic medications for the person. */
   public Map<String, HealthRecord.Medication> chronicMedications;
   /** The active health record. */
   public HealthRecord record;
@@ -137,14 +240,14 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
   /** History of the currently active module. */
   public List<State> history;
   /** Record of insurance coverage. */
-  public CoverageRecord coverage;
+  public final CoverageRecord coverage;
 
   /**
    * Person constructor.
+   * @param seed the seed for random number generation
    */
   public Person(long seed) {
-    this.seed = seed;
-    random = new Random(seed);
+    random = new DefaultRandomNumberGenerator(seed);
     attributes = new ConcurrentHashMap<String, Object>();
     vitalSigns = new ConcurrentHashMap<VitalSign, ValueGenerator>();
     symptoms = new ConcurrentHashMap<String, ExpressedSymptom>();
@@ -152,80 +255,106 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
     onsetConditionRecord = new ExpressedConditionRecord(this);
     /* Chronic Medications which will be renewed at each Wellness Encounter */
     chronicMedications = new ConcurrentHashMap<String, HealthRecord.Medication>();
-    hasMultipleRecords =
-        Config.getAsBoolean("exporter.split_records", false);
+    hasMultipleRecords = Config.getAsBoolean("exporter.split_records", false);
     if (hasMultipleRecords) {
       records = new ConcurrentHashMap<String, HealthRecord>();
     }
-    defaultRecord = new HealthRecord(this);
-    lossOfCareEnabled =
-        Config.getAsBoolean("generate.payers.loss_of_care", false);
-    if (lossOfCareEnabled) {
-      lossOfCareRecord = new HealthRecord(this);
-    }
-    record = defaultRecord;
+    this.initializeDefaultHealthRecords();
     coverage = new CoverageRecord(this);
+  }
+
+  /**
+   * Initializes person's default health records. May need to be called if attributes
+   * change due to fixed demographics.
+   */
+  public void initializeDefaultHealthRecords() {
+    this.defaultRecord = new HealthRecord(this);
+    this.record = this.defaultRecord;
+    this.lossOfCareEnabled = Config.getAsBoolean("generate.payers.loss_of_care", false);
+    if (this.lossOfCareEnabled) {
+      this.lossOfCareRecord = new HealthRecord(this);
+    }
   }
 
   /**
    * Returns a random double.
    */
   public double rand() {
-    return random.nextDouble();
+    return random.rand();
   }
 
   /**
    * Returns a random boolean.
    */
   public boolean randBoolean() {
-    return random.nextBoolean();
+    return random.randBoolean();
   }
 
   /**
    * Returns a random integer.
    */
   public int randInt() {
-    return random.nextInt();
+    return random.randInt();
   }
 
   /**
    * Returns a random integer in the given bound.
    */
   public int randInt(int bound) {
-    return random.nextInt(bound);
+    return random.randInt(bound);
   }
 
   /**
    * Returns a double from a normal distribution.
    */
   public double randGaussian() {
-    return random.nextGaussian();
+    return random.randGaussian();
   }
 
   /**
    * Return a random long.
    */
   public long randLong() {
-    return random.nextLong();
+    return random.randLong();
   }
 
   /**
    * Return a random UUID.
    */
   public UUID randUUID() {
-    return new UUID(randLong(), randLong());
+    return random.randUUID();
+  }
+
+  @Override
+  public long getCount() {
+    return random.getCount();
+  }
+
+  @Override
+  public long getSeed() {
+    return random.getSeed();
   }
 
   /**
    * Returns a person's age in Period form.
+   *
+   * @param time The time at which to calculate the age.
+   * @return The age of the person as a Period.
    */
   public Period age(long time) {
     Period age = Period.ZERO;
 
     if (attributes.containsKey(BIRTHDATE)) {
-      LocalDate now = Instant.ofEpochMilli(time).atZone(timeZone).toLocalDate();
-      LocalDate birthdate = Instant.ofEpochMilli((long) attributes.get(BIRTHDATE))
-          .atZone(timeZone).toLocalDate();
+      LocalDate now = Instant.ofEpochMilli(time).atZone(ZoneOffset.UTC).toLocalDate();
+
+      // we call age() a lot, so caching the birthdate as a LocalDate saves some translation
+      LocalDate birthdate = (LocalDate) attributes.get(BIRTHDATE_AS_LOCALDATE);
+      if (birthdate == null) {
+        birthdate = Instant.ofEpochMilli((long) attributes.get(BIRTHDATE))
+            .atZone(ZoneOffset.UTC).toLocalDate();
+        attributes.put(BIRTHDATE_AS_LOCALDATE, birthdate);
+      }
+
       age = Period.between(birthdate, now);
     }
     return age;
@@ -282,6 +411,8 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Returns whether a person is alive at the given time.
+   * @param time the current time in milliseconds
+   * @return true if the person is alive, false otherwise
    */
   public boolean alive(long time) {
     boolean born = attributes.containsKey(Person.BIRTHDATE);
@@ -290,21 +421,24 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
   }
 
   /**
-  * Get the expressed symptoms.
-  */
+   * Gets the expressed symptoms of the person.
+   * @return a map of symptom names to their expressed symptoms
+   */
   public Map<String, ExpressedSymptom> getExpressedSymptoms() {
     return symptoms;
   }
 
   /**
-  * Get the onsetonditionRecord.
-  */
+   * Gets the onset condition record of the person.
+   * @return the onset condition record
+   */
   public ExpressedConditionRecord getOnsetConditionRecord() {
     return onsetConditionRecord;
   }
 
   /**
-   * Returns the number of providers that this person has.
+   * Gets the count of providers associated with the person.
+   * @return the number of providers
    */
   public int providerCount() {
     int count = 1;
@@ -320,6 +454,13 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /** Updating the method for accounting of the time on which
    * the symptom is set.
+   * Sets a symptom for the person.
+   * @param module The module that triggered the symptom.
+   * @param cause The cause of the symptom.
+   * @param type The type of symptom.
+   * @param time The time the symptom occurred.
+   * @param value The severity or value of the symptom.
+   * @param addressed Whether the symptom has been addressed.
    */
   public void setSymptom(String module, String cause, String type,
       long time, int value, Boolean addressed) {
@@ -332,6 +473,9 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Method for retrieving the last time a given symptom has been updated from a given module.
+   * @param module the module containing the symptom
+   * @param symptom the symptom to check
+   * @return the last updated time of the symptom
    */
   public Long getSymptomLastUpdatedTime(String module, String symptom) {
     Long result = null;
@@ -344,7 +488,9 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Method for retrieving the value associated to a given symptom.
-   * This correspond to the maximum value across all potential causes.
+   * This corresponds to the maximum value across all potential causes.
+   * @param type the symptom type
+   * @return the value of the symptom
    */
   public int getSymptom(String type) {
     int max = 0;
@@ -360,14 +506,16 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
    * TODO These symptoms are not filtered by time.
    * @return list of active symptoms above the threshold.
    */
-  public Set<String> getSymptoms() {
-    Set<String> active = new HashSet<String>(symptoms.keySet());
-    for (String symptom : symptoms.keySet()) {
-      int severity = getSymptom(symptom);
-      if (severity < 20) {
-        active.remove(symptom);
-      }
-    }
+  public List<String> getSymptoms() {
+    List<String> active = symptoms.keySet().stream()
+        // map each symptom text to a pair (text, severity)
+        .map(symptom -> Pair.of(symptom, getSymptom(symptom)))
+        // sort by severity, descending
+        .sorted(Comparator.comparing(Pair::getRight, Comparator.reverseOrder()))
+        .filter(p -> p.getRight() >= 20) // filter by severity >= 20
+        .map(Pair::getLeft) // map back to symptom text
+        .collect(Collectors.toList());
+
     return active;
   }
 
@@ -395,6 +543,10 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Get a vital sign value.
+   *
+   * @param vitalSign The vital sign to retrieve.
+   * @param time The time at which to retrieve the vital sign value.
+   * @return The value of the vital sign at the specified time.
    */
   public Double getVitalSign(VitalSign vitalSign, long time) {
     ValueGenerator valueGenerator = vitalSigns.get(vitalSign);
@@ -429,12 +581,21 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
     return retVal;
   }
 
+  /**
+   * Set a vital sign's value generator.
+   *
+   * @param vitalSign The vital sign to set.
+   * @param valueGenerator The value generator to use for the vital sign.
+   */
   public void setVitalSign(VitalSign vitalSign, ValueGenerator valueGenerator) {
     vitalSigns.put(vitalSign, valueGenerator);
   }
 
   /**
    * Convenience function to set a vital sign to a constant value.
+   *
+   * @param vitalSign The vital sign to set.
+   * @param value The constant value to set for the vital sign.
    */
   public void setVitalSign(VitalSign vitalSign, double value) {
     if (!Double.isFinite(value)) {
@@ -478,12 +639,22 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
     return total;
   }
 
+  /**
+   * Check for prior existence of specified state.
+   * @param name The name of the state.
+   * @return True if the state exists, false otherwise.
+   */
   public boolean hadPriorState(String name) {
     return hadPriorState(name, null, null);
   }
 
   /**
    * Check for prior existence of specified state.
+   *
+   * @param name The name of the state.
+   * @param since The name of the state which marks a boundary for checking the history
+   * @param within The time within which to check.
+   * @return True if the state exists, false otherwise.
    */
   public boolean hadPriorState(String name, String since, Long within) {
     if (history == null) {
@@ -505,6 +676,10 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Start an encounter for the current provider.
+   *
+   * @param time The time of the encounter.
+   * @param type The type of encounter.
+   * @return The started encounter.
    */
   public Encounter encounterStart(long time, EncounterType type) {
     // Set the record for the current provider as active
@@ -520,8 +695,10 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
    *
    * @param provider the provider of the encounter
    * @param time the current time (To determine person's current income and payer)
+   * @return The health record for the provider.
+
    */
-  private synchronized HealthRecord getHealthRecord(Provider provider, long time) {
+  public synchronized HealthRecord getHealthRecord(Provider provider, long time) {
 
     // If the person has no more income at this time, then operate on the UncoveredHealthRecord.
     // Note: If person has no more income then they can no longer afford copays/premiums/etc.
@@ -533,9 +710,11 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
     HealthRecord returnValue = this.defaultRecord;
     if (hasMultipleRecords) {
       String key = provider.getResourceID();
+      // Check If the given provider does not have a health record for this person.
       if (!records.containsKey(key)) {
         HealthRecord record = null;
         if (this.record != null && this.record.provider == null) {
+          // If the active healthrecord does not have a provider, assign it as the active record.
           record = this.record;
         } else {
           record = new HealthRecord(this);
@@ -548,84 +727,99 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
     return returnValue;
   }
 
-  public static final String CURRENT_ENCOUNTERS = "current-encounters";
+  /**
+   * Key for tracking the current encounter module.
+   */
+  public static final String CURRENT_ENCOUNTER_MODULE = "current-encounter-module";
 
   /**
-   * Get the current encounter for the specified module or null if none exists.
+   * Get the module with the current encounter or null if no module is
+   * currently in an encounter.
+   *
+   * @return The module with the current encounter, or null if none.
    */
-  @SuppressWarnings("unchecked")
-  public Encounter getCurrentEncounter(Module module) {
-    Map<String, Encounter> moduleToCurrentEncounter
-        = (Map<String, Encounter>) attributes.get(CURRENT_ENCOUNTERS);
-
-    if (moduleToCurrentEncounter == null) {
-      moduleToCurrentEncounter = new HashMap<>();
-      attributes.put(CURRENT_ENCOUNTERS, moduleToCurrentEncounter);
-    }
-
-    return moduleToCurrentEncounter.get(module.name);
+  public String getCurrentEncounterModule() {
+    return (String) attributes.get(CURRENT_ENCOUNTER_MODULE);
   }
 
   /**
-   * Check if there are any current encounters.
-   * @return true if there current encounters, false otherwise
+   * Check if there is a current encounter.
+   * @return true if there is a current encounter, false otherwise.
    */
   public boolean hasCurrentEncounter() {
-    if (attributes != null) {
-      Map<String, Encounter> moduleToCurrentEncounter
-              = (Map<String, Encounter>) attributes.get(CURRENT_ENCOUNTERS);
-
-      if (moduleToCurrentEncounter != null && !moduleToCurrentEncounter.isEmpty()) {
-        // Uncomment the following lines to see which module encounters are blocking the start
-        // of wellness encounters in the encounter module.
-        // System.out.println("Pre-wellness Encounter Check Failed:");
-        // for (String module: moduleToCurrentEncounter.keySet()) {
-        //   Encounter encounter = moduleToCurrentEncounter.get(module);
-        //   System.out.printf("%s, %s\n", module, encounter.codes.get(0).code);
-        // }
-        return true;
-      }
-    }
-    return false;
+    return attributes.containsKey(CURRENT_ENCOUNTER_MODULE);
   }
 
   /**
-   * Set the current encounter for the specified module.
+   * Releases the current encounter reservation.
+   * This always succeeds, so any calls should make sure they are
+   * the owners using 'getCurrentEncounterModule()'.
+   * Currently the parameters are unused.
+   * @param time The time in the simulation.
+   * @param module The name of the module releasing the reservation.
    */
-  @SuppressWarnings("unchecked")
-  public void setCurrentEncounter(Module module, Encounter encounter) {
-    Map<String, Encounter> moduleToCurrentEncounter
-        = (Map<String, Encounter>) attributes.get(CURRENT_ENCOUNTERS);
+  public void releaseCurrentEncounter(long time, String module) {
+    attributes.remove(CURRENT_ENCOUNTER_MODULE);
+  }
 
-    if (moduleToCurrentEncounter == null) {
-      moduleToCurrentEncounter = new HashMap<>();
-      attributes.put(CURRENT_ENCOUNTERS, moduleToCurrentEncounter);
-    }
-    if (encounter == null) {
-      moduleToCurrentEncounter.remove(module.name);
+  /**
+   * Reserve the current Encounter... no other module can run an encounter
+   * (except for Wellness Encounters).
+   * @param time The time in the simulation.
+   * @param module The name of the module making the reservation.
+   * @return true if the encounter is reserved, false otherwise.
+   */
+  public boolean reserveCurrentEncounter(long time, String module) {
+    if (hasCurrentEncounter()) {
+      return false;
     } else {
-      moduleToCurrentEncounter.put(module.name, encounter);
+      attributes.put(CURRENT_ENCOUNTER_MODULE, module);
+      return true;
     }
   }
 
   // Providers API -----------------------------------------------------------
+  /** The current provider key */
   public static final String CURRENTPROVIDER = "currentProvider";
+  /** The preferred provider key */
   public static final String PREFERREDYPROVIDER = "preferredProvider";
 
   /**
    * Get the preferred provider for the specified encounter type. If none is set the
    * provider at the specified time as the preferred provider for this encounter type.
+   *
+   * @param type The type of encounter.
+   * @param time The time of the encounter.
+   * @return The preferred provider.
    */
   public Provider getProvider(EncounterType type, long time) {
     String key = PREFERREDYPROVIDER + type;
     if (!attributes.containsKey(key)) {
       setProvider(type, time);
+    } else {
+      Entity entity = (Entity) attributes.get(ENTITY);
+      // check to see if this is a fixed identity
+      if (entity != null) {
+        Provider provider = (Provider) attributes.get(key);
+        HealthRecord healthRecord = getHealthRecord(provider, time);
+        long lastEncounterTime = healthRecord.lastEncounterTime();
+        // check to see if the provider is valid for this see range
+        if (lastEncounterTime != Long.MIN_VALUE
+            && !entity.seedAt(time).getPeriod().contains(lastEncounterTime)) {
+          // The provider is not in the seed range. Force finding a new provider.
+          System.out.println("Move reset for " + type);
+          setProvider(type, time);
+        }
+      }
     }
     return (Provider) attributes.get(key);
   }
 
   /**
    * Set the preferred provider for the specified encounter type.
+   *
+   * @param type The type of encounter.
+   * @param provider The provider to set as preferred.
    */
   public void setProvider(EncounterType type, Provider provider) {
     if (provider == null) {
@@ -638,14 +832,23 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
   /**
    * Set the preferred provider for the specified encounter type to be the provider
    * at the specified time.
+   *
+   * @param type The type of encounter.
+   * @param time The time of the encounter.
    */
   public void setProvider(EncounterType type, long time) {
     Provider provider = Provider.findService(this, type, time);
+    if (provider == null && Provider.USE_HOSPITAL_AS_DEFAULT) {
+      // Default to Hospital
+      provider = Provider.findService(this, EncounterType.INPATIENT, time);
+    }
     setProvider(type, provider);
   }
 
   /**
    * Set the current provider to be the supplied provider.
+   * @param context The context for the provider.
+   * @param provider The provider to set as current.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public void addCurrentProvider(String context, Provider provider) {
@@ -659,6 +862,8 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Remove the current provider for the specified module.
+   *
+   * @param module The module for which to remove the provider.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public void removeCurrentProvider(String module) {
@@ -670,6 +875,9 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Get the current provider for the specified module.
+   *
+   * @param module The module for which to get the provider.
+   * @return The current provider for the module.
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   public Provider getCurrentProvider(String module) {
@@ -683,6 +891,8 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
   * Returns the sum of QALYS of this person's life.
+  *
+  * @return The sum of QALYS.
   */
   public double getQalys() {
 
@@ -698,6 +908,8 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
 
   /**
    * Returns the sum of DALYS of this person's life.
+   *
+   * @return The sum of DALYs.
    */
   public double getDalys() {
 
@@ -716,38 +928,33 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
    * If a person's income is greater than a year of montlhy premiums + deductible
    * then they can afford the insurance.
    *
-   * @param payer the payer to check.
+   * @param plan the plan to check.
+   * @return true if the person can afford the plan, false otherwise.
    */
-  public boolean canAffordPayer(Payer payer) {
-    int income = (Integer) this.attributes.get(Person.INCOME);
-    double yearlyPremiumTotal = payer.getMonthlyPremium() * 12;
-    double yearlyDeductible = payer.getDeductible();
-    return income > (yearlyPremiumTotal + yearlyDeductible);
+  public boolean canAffordPlan(InsurancePlan plan) {
+    double incomePercentage
+        = Config.getAsDouble("generate.payers.insurance_plans.income_premium_ratio");
+    int income = (int) this.attributes.get(Person.INCOME);
+    BigDecimal yearlyCost = plan.getYearlyCost(income);
+    return BigDecimal.valueOf(income)
+        .multiply(BigDecimal.valueOf(incomePercentage)).compareTo(yearlyCost) >= 0;
   }
 
   /**
    * Returns whether the person's yearly expenses exceed their income. If they do,
    * then they will switch to No Insurance.
-   * NOTE: This could result in person being kicked off Medicaid/Medicare.
+   * Note: This could result in person being kicked off Medicaid/Medicare.
    *
    * @param time the current time
    */
   private boolean stillHasIncome(long time) {
-    CoverageRecord.Plan plan = coverage.getPlanAtTime(time);
-    double currentYearlyExpenses;
-    if (plan != null) {
-      currentYearlyExpenses = plan.totalExpenses;
-    } else {
-      currentYearlyExpenses = 0.0;
+    int incomeRemaining = this.coverage.incomeRemaining(time);
+    boolean stillHasIncome = incomeRemaining > 0;
+    if (!stillHasIncome && !this.coverage.getPlanAtTime(time).isNoInsurance()) {
+      // Person no longer has income for the year. They will switch to No Insurance.
+      this.coverage.setPlanToNoInsurance(time);
     }
-
-    if ((int) this.attributes.get(Person.INCOME) - currentYearlyExpenses > 0) {
-      // Person has remaining income for the year.
-      return true;
-    }
-    // Person no longer has income for the year. They will switch to No Insurance.
-    this.coverage.setPayerAtTime(time, Payer.noInsurance);
-    return false;
+    return stillHasIncome;
   }
 
   /**
@@ -770,10 +977,9 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
       // TODO - Check that they can still afford the premium due to any newly incurred health costs.
 
       // Pay the payer.
-      Plan plan = this.coverage.getPlanAtTime(time);
-      plan.totalExpenses += (plan.payer.payMonthlyPremium());
-      // Pay secondary insurance, if applicable
-      plan.totalExpenses += (plan.secondaryPayer.payMonthlyPremium());
+      this.coverage.payMonthlyPremiumsAtTime(time,
+          (double) this.attributes.get(Person.OCCUPATION_LEVEL),
+          (int) this.attributes.get(Person.INCOME));
       // Update the last monthly premium paid.
       this.attributes.put(Person.LAST_MONTH_PAID, currentMonth);
       // Check if person has gone in debt. If yes, then they receive no insurance.
@@ -784,7 +990,8 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
   /**
    * Returns the person's QOL at the given time.
    *
-   * @param year the year to get QOL data.
+   * @param year The year to get QOL data.
+   * @return The QOL for the year.
    */
   @SuppressWarnings("unchecked")
   public double getQolsForYear(int year) {
@@ -807,7 +1014,13 @@ public class Person implements Serializable, RandomNumberGenerator, QuadTreeElem
     return getLonLat().getY();
   }
 
+  /**
+   * Returns the geographic coordinates of the person.
+   *
+   * @return The geographic coordinates.
+   */
   public Point2D.Double getLonLat() {
     return (Point2D.Double) attributes.get(Person.COORDINATE);
   }
+
 }

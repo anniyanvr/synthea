@@ -2,14 +2,23 @@ package org.mitre.synthea.helpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.google.gson.JsonPrimitive;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
+
+import org.apache.commons.lang3.Range;
 import org.junit.Test;
 import org.mitre.synthea.world.agents.Person;
+
 
 public class UtilitiesTest {
 
@@ -220,5 +229,48 @@ public class UtilitiesTest {
     // Trying to parse a non-primitive class type results in an
     // IllegalArgumentException
     Utilities.strToObject(Date.class, "oops");
+  }
+
+  @Test
+  public void parseDateRange() {
+    String testRange = "2020-09-05-2021-08-03";
+    long start = LocalDateTime.of(2020, 9, 5, 0, 0)
+        .toInstant(ZoneOffset.UTC).toEpochMilli();
+    long end = LocalDateTime.of(2021, 8, 4, 0, 0)
+        .toInstant(ZoneOffset.UTC).toEpochMilli() - 1;
+    Range<Long> result = Utilities.parseDateRange(testRange);
+    assertEquals(start, (long) result.getMinimum());
+    assertEquals(end, (long) result.getMaximum());
+    testRange = "1599264000000-1628035199999";
+    result = Utilities.parseDateRange(testRange);
+    assertEquals(start, (long) result.getMinimum());
+    assertEquals(end, (long) result.getMaximum());
+    try {
+      Utilities.parseDateRange("silliness");
+      fail("Should not reach here, exception should be thrown.");
+    } catch (IllegalArgumentException iae) {
+      assertNotNull(iae);
+    }
+  }
+
+  @Test
+  public void testLocalDateToTimestamp() {
+    // roundtrip test for every day of year
+    for (int dayOfYear = 1; dayOfYear <= 366; dayOfYear++) {
+      // 2020 is a leap year
+      LocalDate origDate = LocalDate.ofYearDay(2020, dayOfYear);
+      long timestamp = Utilities.localDateToTimestamp(origDate);
+      LocalDate roundtrip = Utilities.timestampToLocalDate(timestamp);
+      assertEquals(origDate, roundtrip);
+    }
+
+    // 1577836800000 == Wed Jan 01 2020 00:00:00 GMT+0000 https://www.unixtimestamp.com/
+    long oneDay = Utilities.convertTime("days", 1);
+    for (int dayOfYear = 0; dayOfYear < 366; dayOfYear++) {
+      long origTimestamp = 1577836800000L + (dayOfYear * oneDay);
+      LocalDate localDate = Utilities.timestampToLocalDate(origTimestamp);
+      long roundtrip = Utilities.localDateToTimestamp(localDate);
+      assertEquals(origTimestamp, roundtrip);
+    }
   }
 }

@@ -688,7 +688,7 @@
       "codes": [
         {
           "system": "SNOMED-CT",
-          "code": 13569004,
+          "code": "13569004",
           "display": "Transfusion of plasma (procedure)"
         }
       ],
@@ -707,7 +707,7 @@
           "quantity": 1,
           "code": {
             "system": "SNOMED-CT",
-            "code": 84879009,
+            "code": "84879009",
             "display": "Human plasma, blood product (product)"
           }
         }
@@ -761,7 +761,7 @@
         {
           "system": "RxNorm",
           "code": 999998,
-          "display": "Leronlimab 700 MG Injection"
+          "display": "amlodipine 5 MG / hydrochlorothiazide 12.5 MG / olmesartan medoxomil 40 MG [Tribenzor]"
         }
       ],
       "administration": true,
@@ -907,8 +907,8 @@
       "codes": [
         {
           "system": "RxNorm",
-          "code": 999999,
-          "display": "Lenzilumab 200 MG IV"
+          "code": 999970,
+          "display": "amlodipine / hydrochlorothiazide / olmesartan Oral Tablet [Tribenzor]"
         }
       ],
       "administration": true,
@@ -971,8 +971,8 @@
       "codes": [
         {
           "system": "RxNorm",
-          "code": 999999,
-          "display": "CM4620 Injectable Emulsion"
+          "code": 999970,
+          "display": "amlodipine / hydrochlorothiazide / olmesartan Oral Tablet [Tribenzor]"
         }
       ],
       "administration": true,
@@ -996,8 +996,8 @@
       "codes": [
         {
           "system": "RxNorm",
-          "code": 999999,
-          "display": "Aviptadil Infusion"
+          "code": 999970,
+          "display": "amlodipine / hydrochlorothiazide / olmesartan Oral Tablet [Tribenzor]"
         }
       ],
       "administration": true,
@@ -1018,7 +1018,7 @@
         "instructions": [
           {
             "system": "SNOMED-CT",
-            "code": 261754007,
+            "code": "261754007",
             "display": "Continuous infusion (qualifier value)"
           }
         ]
@@ -1041,8 +1041,8 @@
       "codes": [
         {
           "system": "RxNorm",
-          "code": 999999,
-          "display": "CD24Fc 480 MG IV"
+          "code": 999970,
+          "display": "amlodipine / hydrochlorothiazide / olmesartan Oral Tablet [Tribenzor]"
         }
       ],
       "administration": true,
